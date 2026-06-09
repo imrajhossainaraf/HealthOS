@@ -1,0 +1,175 @@
+@import "tailwindcss";
+
+/* ============================================================
+   HealthOS — Design System (v2 · White / Formal)
+   Light, clinical, professional. Teal primary · refined accents.
+   ============================================================ */
+
+@theme {
+  /* Surfaces */
+  --color-base: #f4f6f9;        /* app background — soft neutral */
+  --color-surface: #ffffff;     /* cards */
+  --color-surface-2: #eef2f7;   /* subtle / hover / tiles */
+
+  /* Brand + semantic (chosen for AA contrast on white) */
+  --color-primary: #0d9488;     /* teal-600 */
+  --color-primary-glow: rgba(13, 148, 136, 0.16);
+  --color-emergency: #e11d48;   /* rose-600 */
+  --color-warning: #b45309;     /* amber-700 */
+  --color-info: #2563eb;        /* blue-600 */
+  --color-success: #059669;     /* emerald-600 */
+  --color-herbal: #15803d;      /* green-700 */
+  --color-family: #7c3aed;      /* violet-600 */
+
+  /* Text + lines */
+  --color-text: #0f172a;        /* slate-900 */
+  --color-muted: #64748b;       /* slate-500 */
+  --color-border: #e2e8f0;      /* slate-200 */
+
+  /* Fonts (wired to next/font CSS variables in layout.js) */
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-outfit), var(--font-inter), sans-serif;
+
+  /* Motion */
+  --animate-pulse-glow: pulse-glow 2s ease-in-out infinite;
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-mesh: mesh 18s ease-in-out infinite;
+  --animate-fade-up: fade-up 0.5s ease both;
+}
+
+@keyframes pulse-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(225, 29, 72, 0.5), 0 6px 18px rgba(225, 29, 72, 0.35);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 0 12px rgba(225, 29, 72, 0), 0 8px 24px rgba(225, 29, 72, 0.25);
+    transform: scale(1.04);
+  }
+}
+
+@keyframes float {
+  0%,
+  100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes mesh {
+  0%,
+  100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(4%, -3%) scale(1.08); }
+  66% { transform: translate(-3%, 4%) scale(0.96); }
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ---------- Base ---------- */
+html {
+  color-scheme: light;
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background: var(--color-base);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1, h2, h3 {
+  letter-spacing: -0.015em;
+}
+
+::selection {
+  background: var(--color-primary-glow);
+  color: var(--color-text);
+}
+
+/* Refined light scrollbar */
+::-webkit-scrollbar { width: 12px; height: 12px; }
+::-webkit-scrollbar-track { background: var(--color-base); }
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 8px;
+  border: 3px solid var(--color-base);
+}
+::-webkit-scrollbar-thumb:hover { background: var(--color-muted); }
+
+/* Accessible focus ring for keyboard users */
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ---------- Reusable utilities ---------- */
+@layer components {
+  /* Card surface with a soft, formal shadow */
+  .glass {
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid var(--color-border);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.03);
+  }
+
+  .glass-hover {
+    transition: border-color 0.22s ease, transform 0.22s ease, box-shadow 0.22s ease;
+  }
+  .glass-hover:hover {
+    border-color: color-mix(in srgb, var(--color-primary) 45%, transparent);
+    transform: translateY(-2px);
+    box-shadow: 0 12px 28px -14px rgba(15, 23, 42, 0.22);
+  }
+
+  /* Gradient text — teal → blue, readable on white */
+  .text-gradient {
+    background: linear-gradient(120deg, var(--color-primary), #2563eb 85%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* Soft mesh backdrop blob (kept subtle for the light theme) */
+  .mesh-blob {
+    position: absolute;
+    border-radius: 9999px;
+    filter: blur(90px);
+    opacity: 0.22;
+    pointer-events: none;
+  }
+}
+
+/* ---------- Print: isolate the Health Card ---------- */
+@media print {
+  body * { visibility: hidden; }
+  #health-card,
+  #health-card * { visibility: visible; }
+  #health-card {
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 100%;
+    border-color: #000 !important;
+    color: #000 !important;
+    background: #fff !important;
+  }
+  .no-print { display: none !important; }
+}
+
+/* Respect reduced-motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
