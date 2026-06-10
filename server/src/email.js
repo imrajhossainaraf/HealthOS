@@ -50,37 +50,120 @@ export async function sendMail({ to, subject, text, html }) {
   }
 }
 
+/** Escape user-supplied text before interpolating into email HTML. */
+function esc(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+/**
+ * Wrap body content in a branded, email-client-safe shell (table layout +
+ * inline styles — the only thing Gmail/Outlook reliably render). `accent` tints
+ * the header bar and the footer rule.
+ */
+function renderEmailLayout({ accent = "#0d9488", preheader = "", body }) {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f4f6f9;font-family:Segoe UI,Helvetica,Arial,sans-serif;color:#0f172a;">
+  <span style="display:none!important;visibility:hidden;opacity:0;height:0;width:0;overflow:hidden;">${esc(preheader)}</span>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f6f9;padding:24px 12px;">
+    <tr><td align="center">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border:1px solid #e2e8f0;border-radius:16px;overflow:hidden;box-shadow:0 8px 24px -16px rgba(15,23,42,0.25);">
+        <tr><td style="background:${accent};padding:20px 28px;">
+          <span style="color:#ffffff;font-size:18px;font-weight:700;letter-spacing:-0.01em;">✚ HealthOS</span>
+        </td></tr>
+        <tr><td style="padding:28px;">${body}</td></tr>
+        <tr><td style="padding:18px 28px;border-top:1px solid #eef2f7;">
+          <p style="margin:0;font-size:12px;line-height:1.5;color:#94a3b8;">
+            HealthOS — community health &amp; emergency network. This is an automated message; please do not reply.
+          </p>
+        </td></tr>
+      </table>
+      <p style="max-width:560px;margin:14px auto 0;font-size:11px;color:#cbd5e1;text-align:center;">
+        Bangladesh national emergency: <strong style="color:#94a3b8;">999</strong>
+      </p>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+}
+
 /** One-time passcode for email confirmation. */
 export async function sendOtpEmail(to, code) {
+  const body = `
+    <h1 style="margin:0 0 6px;font-size:20px;font-weight:700;">Verify your email</h1>
+    <p style="margin:0 0 20px;font-size:14px;line-height:1.6;color:#475569;">Enter this code in HealthOS to confirm your address.</p>
+    <div style="text-align:center;margin:0 0 20px;">
+      <span style="display:inline-block;background:#eef2f7;border:1px solid #e2e8f0;border-radius:12px;padding:14px 28px;font-size:30px;font-weight:700;letter-spacing:8px;color:#0d9488;">${esc(code)}</span>
+    </div>
+    <p style="margin:0;font-size:13px;line-height:1.6;color:#64748b;">This code expires in 10 minutes. If you didn't request it, you can safely ignore this email.</p>`;
   return sendMail({
     to,
     subject: "Your HealthOS verification code",
-    text: `Your HealthOS verification code is ${code}. It expires in 10 minutes.`,
-    html: `<p>Your HealthOS verification code is</p>
-<p style="font-size:28px;font-weight:700;letter-spacing:4px">${code}</p>
-<p>It expires in 10 minutes. If you didn't request this, ignore this email.</p>`,
+    text: `Your HealthOS verification code is ${code}. It expires in 10 minutes. If you didn't request this, ignore this email.`,
+    html: renderEmailLayout({ accent: "#0d9488", preheader: `Your code is ${code}`, body }),
   });
 }
 
 /** Emergency SOS notification to a contact / guardian / nearby responder. */
 export async function sendSosEmail(to, alert, { relationship = "contact" } = {}) {
-  const where = alert.area || (alert.lat != null ? `${alert.lat.toFixed(4)}, ${alert.lng.toFixed(4)}` : "location unknown");
-  const mapLink = alert.lat != null ? `https://www.openstreetmap.org/?mlat=${alert.lat}&mlon=${alert.lng}#map=16/${alert.lat}/${alert.lng}` : null;
+  const where =
+    alert.area ||
+    (alert.lat != null ? `${alert.lat.toFixed(4)}, ${alert.lng.toFixed(4)}` : "Location not shared");
+  const mapLink =
+    alert.lat != null
+      ? `https://www.openstreetmap.org/?mlat=${alert.lat}&mlon=${alert.lng}#map=16/${alert.lat}/${alert.lng}`
+      : null;
+  const when = alert.createdAt
+    ? new Date(alert.createdAt).toLocaleString("en-GB", { timeZone: "Asia/Dhaka", dateStyle: "medium", timeStyle: "short" })
+    : null;
+
+  const row = (label, value) => `
+    <tr>
+      <td style="padding:10px 0;border-bottom:1px solid #f1f5f9;font-size:13px;color:#64748b;width:34%;vertical-align:top;">${esc(label)}</td>
+      <td style="padding:10px 0;border-bottom:1px solid #f1f5f9;font-size:14px;font-weight:600;color:#0f172a;">${value}</td>
+    </tr>`;
+
+  const body = `
+    <div style="display:inline-block;background:#fee2e2;color:#e11d48;font-size:12px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;padding:6px 12px;border-radius:999px;margin:0 0 14px;">🚨 Emergency SOS</div>
+    <h1 style="margin:0 0 6px;font-size:21px;font-weight:700;line-height:1.3;">${esc(alert.victim)} needs help</h1>
+    <p style="margin:0 0 22px;font-size:14px;line-height:1.6;color:#475569;">
+      A HealthOS emergency beacon was triggered near you. You're receiving this as their <strong>${esc(relationship)}</strong>.
+    </p>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 22px;">
+      ${row("Reason", esc(alert.reason))}
+      ${row("Location", esc(where))}
+      ${when ? row("Triggered", esc(when)) : ""}
+    </table>
+    ${
+      mapLink
+        ? `<div style="text-align:center;margin:0 0 22px;">
+            <a href="${mapLink}" style="display:inline-block;background:#0d9488;color:#ffffff;font-size:14px;font-weight:600;text-decoration:none;padding:13px 28px;border-radius:10px;">📍 Open location on map</a>
+          </div>`
+        : ""
+    }
+    <div style="background:#fff1f2;border:1px solid #fecdd3;border-radius:12px;padding:14px 16px;">
+      <p style="margin:0;font-size:13px;line-height:1.6;color:#9f1239;">
+        Please reach out to them immediately. If this is life-threatening, call the national emergency line
+        <strong style="font-size:15px;">999</strong> right away.
+      </p>
+    </div>`;
+
   return sendMail({
     to,
     subject: `🚨 Emergency alert: ${alert.victim} needs help`,
     text: `${alert.victim} triggered a HealthOS emergency SOS.
 Reason: ${alert.reason}
-Area: ${where}
-${mapLink ? `Map: ${mapLink}` : ""}
-You are receiving this as their ${relationship}. Please reach out or call local emergency services (999).`,
-    html: `<h2 style="color:#e11d48">🚨 Emergency SOS</h2>
-<p><strong>${alert.victim}</strong> triggered a HealthOS emergency alert.</p>
-<ul>
-  <li><strong>Reason:</strong> ${alert.reason}</li>
-  <li><strong>Area:</strong> ${where}</li>
-  ${mapLink ? `<li><strong>Location:</strong> <a href="${mapLink}">Open map</a></li>` : ""}
-</ul>
-<p>You are receiving this as their ${relationship}. Please reach out, or call local emergency services (<strong>999</strong>).</p>`,
+Location: ${where}${when ? `\nTriggered: ${when}` : ""}
+${mapLink ? `Map: ${mapLink}\n` : ""}You are receiving this as their ${relationship}. Please reach out, or call local emergency services (999).`,
+    html: renderEmailLayout({
+      accent: "#e11d48",
+      preheader: `${alert.victim} triggered an emergency SOS — ${where}`,
+      body,
+    }),
   });
 }

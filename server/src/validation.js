@@ -61,6 +61,22 @@ export const reputationAwardSchema = z.object({
   reason: z.string().trim().max(120).optional().default("Contribution"),
 });
 
+// AI Health Copilot chat request. `messages` is the running conversation; the
+// profile is optional context the client attaches for personalisation.
+export const aiChatSchema = z.object({
+  copilot: z.enum(["assistant", "emergency", "herbal", "fitness", "health"]).default("assistant"),
+  messages: z
+    .array(
+      z.object({
+        role: z.enum(["user", "bot", "assistant"]),
+        text: z.string().trim().min(1).max(2000),
+      })
+    )
+    .min(1)
+    .max(24),
+  profile: z.record(z.string(), z.any()).optional(),
+});
+
 // Community symptom / outbreak report (anonymous, shared).
 export const outbreakSchema = z.object({
   symptom: z.string().trim().min(1).max(60),

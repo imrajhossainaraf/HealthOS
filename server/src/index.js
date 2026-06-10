@@ -15,6 +15,7 @@ import { herbsRouter } from "./routes/herbs.routes.js";
 import { outbreaksRouter } from "./routes/outbreaks.routes.js";
 import { alertsRouter } from "./routes/alerts.routes.js";
 import { reputationRouter } from "./routes/reputation.routes.js";
+import { aiRouter } from "./routes/ai.routes.js";
 import { initRealtime } from "./realtime.js";
 
 const app = express();
@@ -50,6 +51,7 @@ app.use("/api/herbs", herbsRouter);
 app.use("/api/outbreaks", outbreaksRouter);
 app.use("/api/alerts", alertsRouter);
 app.use("/api/reputation", reputationRouter);
+app.use("/api/ai", aiRouter);
 
 // 404 for unknown API routes.
 app.use("/api", (req, res) => res.status(404).json({ error: "Not found" }));

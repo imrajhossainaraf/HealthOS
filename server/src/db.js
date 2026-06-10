@@ -18,6 +18,10 @@ export async function connectDb() {
     database.collection("users").createIndex({ email: 1 }, { unique: true }),
     // Phone is optional but unique when present (sparse) — powers /api/users/by-phone.
     database.collection("users").createIndex({ phone: 1 }, { unique: true, sparse: true }),
+    // Last known coordinates per user (GeoJSON Point) — powers $near "nearby
+    // member" lookups for SOS email notices. Sparse: only set once a user shares
+    // a location via SOS or volunteer presence.
+    database.collection("users").createIndex({ lastLocation: "2dsphere" }, { sparse: true }),
     database.collection("documents").createIndex({ userId: 1, key: 1 }, { unique: true }),
     database.collection("donors").createIndex({ blood_group: 1 }),
     database.collection("donors").createIndex({ createdAt: -1 }),

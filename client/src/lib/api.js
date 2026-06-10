@@ -123,6 +123,13 @@ export const alertApi = {
   list: () => apiFetch("/api/alerts", { auth: false }),
 };
 
+// AI Health Copilot (OpenRouter-backed). `chat` requires auth.
+export const aiApi = {
+  status: () => apiFetch("/api/ai/status", { auth: false }),
+  chat: ({ copilot, messages, profile }) =>
+    apiFetch("/api/ai/chat", { method: "POST", body: { copilot, messages, profile } }),
+};
+
 // Real, cross-user contribution leaderboard.
 export const reputationApi = {
   leaderboard: () => apiFetch("/api/reputation/leaderboard", { auth: false }),

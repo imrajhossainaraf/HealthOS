@@ -54,4 +54,16 @@ export const config = {
   },
   // Where to bounce the browser back to after OAuth (first allowed origin).
   clientAppUrl: (process.env.CLIENT_ORIGIN || "http://localhost:3000").split(",")[0].trim(),
+  // OpenRouter AI (powers the Health Copilot chatbot). Disabled until a key is set.
+  ai: {
+    apiKey: process.env.OPENROUTER_API_KEY || "",
+    model: process.env.OPENROUTER_MODEL || "openai/gpt-oss-120b:free",
+    baseUrl: process.env.OPENROUTER_BASE_URL || "https://openrouter.ai/api/v1",
+    // Sent to OpenRouter for attribution/leaderboards (optional but recommended).
+    appUrl: process.env.OPENROUTER_APP_URL || "http://localhost:3000",
+    appTitle: process.env.OPENROUTER_APP_TITLE || "HealthOS",
+    get enabled() {
+      return Boolean(this.apiKey);
+    },
+  },
 };

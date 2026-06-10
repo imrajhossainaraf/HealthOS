@@ -21,16 +21,131 @@ function distanceKm(a, b) {
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+// Don't blast an entire city — cap how many members we email per SOS.
+const NEARBY_MEMBER_LIMIT = 80;
+// Ignore location fixes older than this when deciding who's "nearby" — a month-old
+// position is not where someone is during an emergency.
+const LOCATION_FRESHNESS_MS = 30 * 24 * 3600_000;
+
+/**
+ * Remember a user's most recent coordinates as a GeoJSON Point so future SOS
+ * notices can find who's genuinely nearby (via a 2dsphere $near query). Called
+ * whenever a user shares a location — firing an SOS or going volunteer-online.
+ * Best-effort; never throws.
+ */
+async function rememberUserLocation(userId, lat, lng) {
+  if (!userId || typeof lat !== "number" || typeof lng !== "number") return;
+  const oid = toObjectId(userId);
+  if (!oid) return;
+  try {
+    await collections.users().updateOne(
+      { _id: oid },
+      { $set: { lastLocation: { type: "Point", coordinates: [lng, lat] }, lastLocationAt: new Date() } }
+    );
+  } catch (err) {
+    console.error("[location] remember failed:", err?.message || err);
+  }
+}
+
+/** Geo path: verified members whose last known fix is within `radiusKm`. */
+async function nearbyByGeo(lat, lng, radiusKm, victimOid, out) {
+  const query = {
+    verified: true,
+    lastLocationAt: { $gte: new Date(Date.now() - LOCATION_FRESHNESS_MS) },
+    lastLocation: {
+      $near: {
+        $geometry: { type: "Point", coordinates: [lng, lat] },
+        $maxDistance: Math.max(1, radiusKm) * 1000, // km -> metres
+      },
+    },
+  };
+  if (victimOid) query._id = { $ne: victimOid };
+
+  const users = await collections
+    .users()
+    .find(query)
+    .limit(NEARBY_MEMBER_LIMIT)
+    .project({ email: 1 })
+    .toArray();
+  for (const u of users) {
+    if (EMAIL_RE.test(u.email || "")) out.set(u.email.toLowerCase(), "nearby HealthOS member");
+  }
+}
+
+/** Fallback path: free-text locality match for members without stored coords. */
+async function nearbyByArea(area, victimUserId, out) {
+  // Significant locality tokens (e.g. "Dhanmondi, Dhaka" -> ["dhanmondi","dhaka"]).
+  const tokens = String(area || "")
+    .split(/[^\p{L}\p{N}]+/u)
+    .map((t) => t.trim())
+    .filter((t) => t.length >= 3);
+  if (!tokens.length) return;
+
+  const escaped = tokens.map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+  const areaRe = new RegExp(escaped.join("|"), "i");
+
+  const profiles = await collections
+    .documents()
+    .find({ key: "healthos:profile", "value.area": { $regex: areaRe } })
+    .limit(NEARBY_MEMBER_LIMIT)
+    .toArray();
+
+  const userIds = profiles
+    .map((p) => p.userId)
+    .filter((id) => id && id !== victimUserId)
+    .map((id) => toObjectId(id))
+    .filter(Boolean);
+  if (!userIds.length) return;
+
+  const users = await collections
+    .users()
+    .find({ _id: { $in: userIds }, verified: true })
+    .project({ email: 1 })
+    .toArray();
+  for (const u of users) {
+    if (EMAIL_RE.test(u.email || "") && !out.has(u.email.toLowerCase())) {
+      out.set(u.email.toLowerCase(), "nearby HealthOS member");
+    }
+  }
+}
+
+/**
+ * Find verified members near the alert to notify even while they're offline.
+ * Prefers precise geo-distance (stored last-known coordinates); also folds in a
+ * free-text area match so members who haven't shared GPS yet are still reached.
+ * Returns a Map of lowercased email -> relationship, excluding the victim.
+ */
+async function findNearbyMembers({ lat, lng, area }, victimUserId, radiusKm = 5) {
+  const out = new Map();
+  const victimOid = victimUserId ? toObjectId(victimUserId) : null;
+  try {
+    if (typeof lat === "number" && typeof lng === "number") {
+      await nearbyByGeo(lat, lng, radiusKm, victimOid, out);
+    }
+    await nearbyByArea(area, victimUserId, out);
+  } catch (err) {
+    console.error("[sos email] nearby member lookup failed:", err?.message || err);
+  }
+  return out;
+}
+
 /**
  * Email the people who should know about an SOS: the victim's saved emergency
- * contacts and guardian (read from their stored profile), plus any opted-in
- * volunteers currently within the alert radius. De-duplicated; best-effort.
+ * contacts and guardian (read from their stored profile), opted-in volunteers
+ * currently within the alert radius, plus registered members whose saved area is
+ * near the alert (even if offline). De-duplicated; best-effort.
  */
-async function notifyByEmail(userId, payload, volunteerEmails = []) {
+async function notifyByEmail(userId, payload, volunteerEmails = [], radiusKm = 5) {
   const recipients = new Map(); // email -> relationship
 
   for (const email of volunteerEmails) {
     if (EMAIL_RE.test(email)) recipients.set(email.toLowerCase(), "nearby responder");
+  }
+
+  // Registered members near the alert (precise geo + area fallback), offline-capable.
+  const nearby = await findNearbyMembers(payload, userId, radiusKm);
+  for (const [email, relationship] of nearby) {
+    if (!recipients.has(email)) recipients.set(email, relationship);
   }
 
   if (userId) {
@@ -71,6 +186,8 @@ export function initRealtime(httpServer) {
     socket.on("volunteer:online", ({ lat, lng } = {}) => {
       if (typeof lat === "number" && typeof lng === "number") {
         volunteers.set(socket.id, { user: user?.name || "Volunteer", email: user?.email || "", lat, lng });
+        // Persist as the user's last-known fix for future nearby lookups.
+        rememberUserLocation(user?.id, lat, lng);
       }
     });
     socket.on("volunteer:offline", () => volunteers.delete(socket.id));
@@ -98,6 +215,9 @@ export function initRealtime(httpServer) {
         console.error("[alerts] persist failed:", err?.message || err);
       }
 
+      // Remember where the victim is so the next SOS can locate who's near them.
+      if (hasLoc) rememberUserLocation(user?.id, lat, lng);
+
       const payload = alertToClient(saved);
       // Broadcast to everyone except the sender.
       socket.broadcast.emit("sos:alert", payload);
@@ -116,7 +236,7 @@ export function initRealtime(httpServer) {
       socket.emit("sos:ack", { reachedCount: reached, alert: payload });
 
       // Fire-and-forget email notifications (contacts, guardian, nearby responders).
-      notifyByEmail(user?.id, payload, volunteerEmails).catch((err) =>
+      notifyByEmail(user?.id, payload, volunteerEmails, radiusKm).catch((err) =>
         console.error("[sos email] failed:", err?.message || err)
       );
     });
