@@ -274,7 +274,7 @@ export default function DashboardPage() {
               <ol className="relative space-y-4 border-l border-border pl-5">
                 {history.slice(0, 4).map((e) => (
                   <li key={e.id} className="relative">
-                    <span className="absolute -left-[1.62rem] top-1 grid h-5 w-5 place-items-center rounded-full bg-emergency/15 text-[10px]">
+                    <span className="absolute left-[-1.62rem] top-1 grid h-5 w-5 place-items-center rounded-full bg-emergency/15 text-[10px]">
                       🚨
                     </span>
                     <p className="text-sm font-medium">{e.reason}</p>
@@ -301,7 +301,7 @@ export default function DashboardPage() {
                 <p className="text-sm text-muted">Today’s intake</p>
                 <p className="font-display text-2xl font-bold">
                   {todayWater}
-                  <span className="text-base font-normal text-muted"> / 8 glasses</span>
+                  <span className="text-base font-normal"> / 8 glasses</span>
                 </p>
                 <div className="mt-2 flex items-center gap-2">
                   <button
