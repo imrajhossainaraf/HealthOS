@@ -1,5 +1,9 @@
 node_modules/
 data/
-.env
-.env.local
 *.log
+
+# env files — never commit real secrets
+.env
+.env.*
+# ...but keep the example template tracked.
+!.env.example
