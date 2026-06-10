@@ -128,29 +128,39 @@ export default function DashboardPage() {
   return (
     <div className="pb-16">
       {/* ============== HEADER ============== */}
-      <header className="mx-auto max-w-6xl px-4 pt-10 sm:px-6">
-        <p className="text-sm text-muted">{today}</p>
-        <h1 className="mt-1 font-display text-3xl font-bold sm:text-4xl">
-          Welcome back, <span className="text-primary">{firstName}</span> 👋
-        </h1>
-        <p className="mt-1 text-muted">Your unified health overview.</p>
+      <header className="relative overflow-hidden">
+        {/* Animated mesh backdrop */}
+        <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
+          <div className="mesh-blob animate-mesh left-[-6%] top-[-40%] h-72 w-72" style={{ background: "var(--color-primary)" }} />
+          <div className="mesh-blob animate-float right-[4%] top-[-30%] h-64 w-64" style={{ background: "#2563eb" }} />
+          <div className="mesh-blob animate-mesh left-[40%] top-[-20%] h-56 w-56" style={{ background: "#7c3aed", animationDelay: "-6s" }} />
+        </div>
 
-        {/* quick actions — light, fast access */}
-        <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-          {QUICK.map((q) => (
-            <Link
-              key={q.href}
-              href={q.href}
-              className="glass glass-hover flex items-center gap-2.5 rounded-2xl px-3 py-3"
-            >
-              <span
-                className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl text-lg ${q.chip}`}
+        <div className="mx-auto max-w-6xl px-4 pt-10 sm:px-6 animate-fade-up">
+          <p className="text-sm text-muted">{today}</p>
+          <h1 className="mt-1 font-display text-3xl font-bold sm:text-4xl">
+            Welcome back, <span className="text-gradient-animated">{firstName}</span> 👋
+          </h1>
+          <p className="mt-1 text-muted">Your unified health overview.</p>
+
+          {/* quick actions — light, fast access */}
+          <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+            {QUICK.map((q, i) => (
+              <Link
+                key={q.href}
+                href={q.href}
+                style={{ animationDelay: `${0.05 * i + 0.1}s` }}
+                className="glass card-rise animate-rise-in flex items-center gap-2.5 rounded-2xl px-3 py-3"
               >
-                {q.icon}
-              </span>
-              <span className="truncate text-sm font-medium">{q.label}</span>
-            </Link>
-          ))}
+                <span
+                  className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl text-lg ${q.chip}`}
+                >
+                  {q.icon}
+                </span>
+                <span className="truncate text-sm font-medium">{q.label}</span>
+              </Link>
+            ))}
+          </div>
         </div>
       </header>
 
@@ -158,24 +168,28 @@ export default function DashboardPage() {
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <div className="mt-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
           <StatCard
+            delay={0.15}
             icon="⚖️"
             tint="text-primary"
             value={bmi ? bmi.value : "—"}
             label={bmi ? `BMI · ${bmi.category}` : "BMI — add height/weight"}
           />
           <StatCard
+            delay={0.22}
             icon="🩸"
             tint="text-emergency"
             value={profile.bloodGroup || "—"}
             label="Blood group"
           />
           <StatCard
+            delay={0.29}
             icon="💧"
             tint="text-info"
             value={`${todayWater}/8`}
             label="Glasses today"
           />
           <StatCard
+            delay={0.36}
             icon="✅"
             tint="text-success"
             value={`${profileComplete}%`}
@@ -397,9 +411,12 @@ export default function DashboardPage() {
 
 /* ---------------- Sub-components ---------------- */
 
-function StatCard({ icon, value, label, tint }) {
+function StatCard({ icon, value, label, tint, delay = 0 }) {
   return (
-    <div className="glass glass-hover rounded-2xl p-5">
+    <div
+      style={{ animationDelay: `${delay}s` }}
+      className="glass card-rise animate-rise-in rounded-2xl p-5"
+    >
       <div className="flex items-center justify-between">
         <span className="text-2xl">{icon}</span>
       </div>

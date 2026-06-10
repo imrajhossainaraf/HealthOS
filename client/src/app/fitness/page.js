@@ -29,6 +29,11 @@ export default function FitnessPage() {
 
   // Reset water at the start of a new day.
   const water = data.waterDate === today() ? data.water : 0;
+  // Defensive: the fitness object may be a partial shape (e.g. written by the
+  // dashboard's quick water logger as { water, waterDate }), so these can be
+  // missing. Never assume the arrays exist.
+  const bmiLog = Array.isArray(data.bmiLog) ? data.bmiLog : [];
+  const activities = Array.isArray(data.activities) ? data.activities : [];
 
   const addWater = (delta) =>
     setData((d) => ({
@@ -44,7 +49,7 @@ export default function FitnessPage() {
     if (!result) return;
     setData((d) => ({
       ...d,
-      bmiLog: [{ date: today(), value: result.value, category: result.category }, ...d.bmiLog].slice(0, 20),
+      bmiLog: [{ date: today(), value: result.value, category: result.category }, ...(d.bmiLog || [])].slice(0, 20),
     }));
     setBmiInput({ height: "", weight: "" });
   };
@@ -53,7 +58,7 @@ export default function FitnessPage() {
     if (!activity.type.trim() || !activity.minutes) return;
     setData((d) => ({
       ...d,
-      activities: [{ date: today(), ...activity, minutes: Number(activity.minutes) }, ...d.activities].slice(0, 30),
+      activities: [{ date: today(), ...activity, minutes: Number(activity.minutes) }, ...(d.activities || [])].slice(0, 30),
     }));
     setActivity({ type: "", minutes: "" });
   };
@@ -118,9 +123,9 @@ export default function FitnessPage() {
             <input className={inp} placeholder={`Weight kg ${profile.weightKg ? `(${profile.weightKg})` : ""}`} value={bmiInput.weight} onChange={(e) => setBmiInput({ ...bmiInput, weight: e.target.value })} />
             <button type="button" onClick={logBMI} className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white">Log</button>
           </div>
-          {data.bmiLog.length > 0 && (
+          {bmiLog.length > 0 && (
             <ul className="mt-3 space-y-1 text-sm">
-              {data.bmiLog.slice(0, 5).map((b, i) => (
+              {bmiLog.slice(0, 5).map((b, i) => (
                 <li key={i} className="flex justify-between rounded-lg border border-border bg-surface px-3 py-1.5">
                   <span className="text-muted">{b.date}</span>
                   <span className="font-medium">{b.value} · {b.category}</span>
@@ -138,9 +143,9 @@ export default function FitnessPage() {
             <input className={inp} placeholder="Minutes" inputMode="numeric" value={activity.minutes} onChange={(e) => setActivity({ ...activity, minutes: e.target.value })} />
             <button type="button" onClick={logActivity} className="rounded-lg bg-success px-4 py-2 text-sm font-semibold text-white">Add</button>
           </div>
-          {data.activities.length > 0 && (
+          {activities.length > 0 && (
             <ul className="mt-3 space-y-1 text-sm">
-              {data.activities.slice(0, 5).map((a, i) => (
+              {activities.slice(0, 5).map((a, i) => (
                 <li key={i} className="flex justify-between rounded-lg border border-border bg-surface px-3 py-1.5">
                   <span>{a.type}</span>
                   <span className="text-muted">{a.minutes} min · {a.date}</span>
