@@ -35,6 +35,24 @@ if (SMTP_CONFIGURED) {
 
 export const emailEnabled = SMTP_CONFIGURED;
 
+// Startup self-check: surfaces SMTP problems in the server logs immediately
+// (e.g. a host that blocks outbound SMTP ports, or a bad app password) instead
+// of only failing silently when the first OTP is sent. Non-blocking.
+if (SMTP_CONFIGURED) {
+  transport
+    .verify()
+    .then(() => console.log(`[email] SMTP ready — sending as ${FROM}`))
+    .catch((err) =>
+      console.error(
+        `[email] SMTP NOT ready: ${err?.message || err}. ` +
+          "If hosted on a platform that blocks outbound SMTP (e.g. Render free tier), " +
+          "switch to an HTTP email API. OTP/SOS emails will fail until this is fixed."
+      )
+    );
+} else {
+  console.warn("[email] SMTP not configured (SMTP_USER/SMTP_PASS missing) — using dev console fallback; no real emails will be sent.");
+}
+
 /** Send an email. Safe to await; resolves to { sent, preview } and never throws. */
 export async function sendMail({ to, subject, text, html }) {
   if (!to) return { sent: false, preview: null };

@@ -149,12 +149,14 @@ async function notifyByEmail(userId, payload, volunteerEmails = [], radiusKm = 5
   }
 
   if (userId) {
-    const [profileDoc, contactsDoc] = await Promise.all([
+    const [profileDoc, contactsDoc, familyDoc] = await Promise.all([
       collections.documents().findOne({ userId, key: "healthos:profile" }),
       collections.documents().findOne({ userId, key: "healthos:emergencyContacts" }),
+      collections.documents().findOne({ userId, key: "healthos:family" }),
     ]);
     const profile = profileDoc?.value || {};
     const contacts = Array.isArray(contactsDoc?.value) ? contactsDoc.value : [];
+    const family = Array.isArray(familyDoc?.value) ? familyDoc.value : [];
 
     if (EMAIL_RE.test(profile.guardianEmail || "")) {
       recipients.set(profile.guardianEmail.toLowerCase(), profile.guardianName ? `guardian (${profile.guardianName})` : "guardian");
@@ -162,6 +164,12 @@ async function notifyByEmail(userId, payload, volunteerEmails = [], radiusKm = 5
     for (const c of contacts) {
       if (EMAIL_RE.test(c.email || "")) {
         recipients.set(c.email.toLowerCase(), c.relation ? `emergency contact (${c.relation})` : "emergency contact");
+      }
+    }
+    // Family Guardian Mode members who have an email on file.
+    for (const m of family) {
+      if (EMAIL_RE.test(m.email || "")) {
+        recipients.set(m.email.toLowerCase(), m.relation ? `family (${m.relation})` : "family member");
       }
     }
   }

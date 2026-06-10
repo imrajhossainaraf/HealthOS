@@ -12,6 +12,7 @@ const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 const EMPTY = {
   name: "",
   relation: "Parent",
+  email: "",
   dob: "",
   bloodGroup: "",
   conditions: [],
@@ -31,6 +32,7 @@ export default function FamilyPage() {
       id: Date.now().toString(36),
       ...form,
       name: form.name.trim(),
+      email: form.email.trim(),
       conditions: splitList(form.conditions),
       medications: splitList(form.medications),
     };
@@ -60,7 +62,10 @@ export default function FamilyPage() {
           <ul className="space-y-2">
             {family.map((m) => (
               <li key={m.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-surface px-3 py-2 text-sm">
-                <span className="font-medium">{m.name} — {m.relation}</span>
+                <span className="font-medium">
+                  {m.name} — {m.relation}
+                  {m.email && <span className="ml-2 text-xs text-success" title={`SOS alerts to ${m.email}`}>✉ alerts on</span>}
+                </span>
                 <span className="flex items-center gap-2 text-muted">
                   <span className={riskText(m.risk)}>{m.risk} risk</span>
                   {m.alert && <span className="text-warning">⚠️ {m.alert}</span>}
@@ -93,12 +98,14 @@ export default function FamilyPage() {
           </section>
 
           <section className="glass rounded-2xl p-5">
-            <h2 className="mb-3 font-display font-semibold">Add a member</h2>
+            <h2 className="mb-1 font-display font-semibold">Add a member</h2>
+            <p className="mb-3 text-xs text-muted">Add an email to alert this person automatically when you trigger an emergency SOS.</p>
             <div className="grid gap-2 sm:grid-cols-2">
               <input className={input} placeholder="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
               <select className={input} value={form.relation} onChange={(e) => setForm({ ...form, relation: e.target.value })}>
                 {RELATIONS.map((r) => <option key={r}>{r}</option>)}
               </select>
+              <input type="email" className={`${input} sm:col-span-2`} placeholder="Email (for SOS alerts)" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} autoComplete="off" />
               <input type="date" className={input} value={form.dob} onChange={(e) => setForm({ ...form, dob: e.target.value })} />
               <select className={input} value={form.bloodGroup} onChange={(e) => setForm({ ...form, bloodGroup: e.target.value })}>
                 <option value="">Blood group…</option>
