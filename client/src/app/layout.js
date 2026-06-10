@@ -4,6 +4,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import SOSButton from "@/components/SOSButton";
 import AuthGate from "@/components/AuthGate";
+import AppBackground from "@/components/AppBackground";
 import { AuthProvider } from "@/lib/auth";
 import { ToastProvider } from "@/lib/toast";
 import { LocationProvider } from "@/lib/location";
@@ -69,7 +70,8 @@ export default function RootLayout({ children }) {
       lang="en"
       className={`${inter.variable} ${outfit.variable} h-full`}
     >
-      <body className="min-h-full flex flex-col bg-base text-text antialiased">
+      <body className="min-h-full flex flex-col text-text antialiased">
+        <AppBackground />
         <AuthProvider>
           <ToastProvider>
             <LocationProvider>

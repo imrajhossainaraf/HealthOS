@@ -128,14 +128,7 @@ export default function DashboardPage() {
   return (
     <div className="pb-16">
       {/* ============== HEADER ============== */}
-      <header className="relative overflow-hidden">
-        {/* Animated mesh backdrop */}
-        <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
-          <div className="mesh-blob animate-mesh left-[-6%] top-[-40%] h-72 w-72" style={{ background: "var(--color-primary)" }} />
-          <div className="mesh-blob animate-float right-[4%] top-[-30%] h-64 w-64" style={{ background: "#2563eb" }} />
-          <div className="mesh-blob animate-mesh left-[40%] top-[-20%] h-56 w-56" style={{ background: "#7c3aed", animationDelay: "-6s" }} />
-        </div>
-
+      <header>
         <div className="mx-auto max-w-6xl px-4 pt-10 sm:px-6 animate-fade-up">
           <p className="text-sm text-muted">{today}</p>
           <h1 className="mt-1 font-display text-3xl font-bold sm:text-4xl">
