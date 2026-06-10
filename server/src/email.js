@@ -9,7 +9,17 @@ const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM } = process.env;
 // Host/port are only needed for non-Gmail providers.
 const SMTP_CONFIGURED = Boolean(SMTP_USER && SMTP_PASS);
 
+// Brevo HTTP email API (https://www.brevo.com) — used in production on hosts that
+// block outbound SMTP (e.g. Render free tier). Sends over HTTPS, so it isn't
+// blocked. When BREVO_API_KEY is set it takes priority over SMTP.
+const BREVO_API_KEY = process.env.BREVO_API_KEY || "";
+const BREVO_CONFIGURED = Boolean(BREVO_API_KEY);
+
 const FROM = SMTP_FROM || SMTP_USER || "HealthOS <no-reply@healthos.local>";
+// Brevo needs a structured sender; the address MUST be a verified sender in your
+// Brevo account. Falls back to your SMTP address, then a placeholder.
+const SENDER_EMAIL = (SMTP_FROM || SMTP_USER || "no-reply@healthos.local").replace(/.*<|>.*/g, "").trim();
+const SENDER_NAME = process.env.EMAIL_FROM_NAME || "HealthOS";
 
 let transport;
 if (SMTP_CONFIGURED) {
@@ -33,12 +43,13 @@ if (SMTP_CONFIGURED) {
   transport = nodemailer.createTransport({ jsonTransport: true });
 }
 
-export const emailEnabled = SMTP_CONFIGURED;
+export const emailEnabled = BREVO_CONFIGURED || SMTP_CONFIGURED;
 
-// Startup self-check: surfaces SMTP problems in the server logs immediately
-// (e.g. a host that blocks outbound SMTP ports, or a bad app password) instead
-// of only failing silently when the first OTP is sent. Non-blocking.
-if (SMTP_CONFIGURED) {
+// Startup self-check — surfaces the active transport (and SMTP problems) in the
+// logs immediately instead of failing silently on the first send. Non-blocking.
+if (BREVO_CONFIGURED) {
+  console.log(`[email] Brevo HTTP API active — sending as ${SENDER_NAME} <${SENDER_EMAIL}>`);
+} else if (SMTP_CONFIGURED) {
   transport
     .verify()
     .then(() => console.log(`[email] SMTP ready — sending as ${FROM}`))
@@ -46,16 +57,54 @@ if (SMTP_CONFIGURED) {
       console.error(
         `[email] SMTP NOT ready: ${err?.message || err}. ` +
           "If hosted on a platform that blocks outbound SMTP (e.g. Render free tier), " +
-          "switch to an HTTP email API. OTP/SOS emails will fail until this is fixed."
+          "set BREVO_API_KEY to send over HTTP instead. OTP/SOS emails will fail until this is fixed."
       )
     );
 } else {
-  console.warn("[email] SMTP not configured (SMTP_USER/SMTP_PASS missing) — using dev console fallback; no real emails will be sent.");
+  console.warn("[email] No email transport configured (set BREVO_API_KEY or SMTP_USER/SMTP_PASS) — using dev console fallback; no real emails will be sent.");
+}
+
+/** Send via Brevo's transactional HTTP API. Resolves { sent, preview }. */
+async function sendViaBrevo({ to, subject, text, html }) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 15000);
+  try {
+    const res = await fetch("https://api.brevo.com/v3/smtp/email", {
+      method: "POST",
+      headers: {
+        "api-key": BREVO_API_KEY,
+        "content-type": "application/json",
+        accept: "application/json",
+      },
+      body: JSON.stringify({
+        sender: { name: SENDER_NAME, email: SENDER_EMAIL },
+        to: [{ email: to }],
+        subject,
+        htmlContent: html,
+        textContent: text,
+      }),
+      signal: controller.signal,
+    });
+    if (!res.ok) {
+      const detail = await res.text().catch(() => "");
+      console.error(`[email] Brevo send failed (${res.status}): ${detail.slice(0, 200)}`);
+      return { sent: false, preview: null };
+    }
+    const data = await res.json().catch(() => ({}));
+    return { sent: true, preview: data.messageId || null };
+  } catch (err) {
+    console.error("[email] Brevo send failed:", err?.name === "AbortError" ? "timeout" : err?.message || err);
+    return { sent: false, preview: null };
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 /** Send an email. Safe to await; resolves to { sent, preview } and never throws. */
 export async function sendMail({ to, subject, text, html }) {
   if (!to) return { sent: false, preview: null };
+  // Prefer the HTTP API in production (works where SMTP is blocked).
+  if (BREVO_CONFIGURED) return sendViaBrevo({ to, subject, text, html });
   try {
     const info = await transport.sendMail({ from: FROM, to, subject, text, html });
     if (!SMTP_CONFIGURED) {
