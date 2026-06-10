@@ -40,6 +40,16 @@ const generalLimiter = rateLimit({ windowMs: 60_000, max: 120, standardHeaders: 
 const authLimiter = rateLimit({ windowMs: 15 * 60_000, max: 30, standardHeaders: true, legacyHeaders: false });
 app.use("/api", generalLimiter);
 
+// Root route — a simple JSON heartbeat so visiting the API host shows it's live.
+app.get("/", (req, res) =>
+  res.json({
+    status: "ok",
+    service: "HealthOS API",
+    message: "Server is up and running",
+    time: new Date().toISOString(),
+  })
+);
+
 app.get("/api/health", (req, res) => res.json({ status: "ok", time: new Date().toISOString() }));
 
 app.use("/api/auth", authLimiter, authRouter);
