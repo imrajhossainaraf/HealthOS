@@ -91,8 +91,16 @@ export default function DashboardPage() {
   const [family] = useLocalState(KEYS.family, []);
   const [community] = useLocalState(KEYS.community, { points: 0 });
   const [history] = useLocalState(KEYS.emergencyHistory, []);
-  const [fitness] = useLocalState(KEYS.profile + ":fitness", { water: 0, waterDate: "" });
+  const [fitness, setFitness] = useLocalState(KEYS.profile + ":fitness", { water: 0, waterDate: "" });
   const { user } = useAuth();
+
+  const todayKey = new Date().toISOString().slice(0, 10);
+  const addWater = (delta) =>
+    setFitness((d) => ({
+      ...d,
+      water: Math.max(0, (d.waterDate === todayKey ? d.water || 0 : 0) + delta),
+      waterDate: todayKey,
+    }));
 
   if (!hp)
     return <div className="mx-auto max-w-6xl px-4 py-16 text-muted">Loading…</div>;
@@ -295,12 +303,27 @@ export default function DashboardPage() {
                   {todayWater}
                   <span className="text-base font-normal text-muted"> / 8 glasses</span>
                 </p>
-                <Link
-                  href="/fitness"
-                  className="mt-2 inline-block text-sm font-medium text-info hover:underline"
-                >
-                  Log water →
-                </Link>
+                <div className="mt-2 flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => addWater(-1)}
+                    disabled={todayWater <= 0}
+                    aria-label="Remove a glass"
+                    className="grid h-8 w-8 place-items-center rounded-lg border border-border bg-surface-2 text-lg font-semibold disabled:opacity-40"
+                  >
+                    −
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => addWater(1)}
+                    className="rounded-lg bg-info px-3 py-1.5 text-sm font-semibold text-white"
+                  >
+                    + Glass
+                  </button>
+                  <Link href="/fitness" className="ml-1 text-sm font-medium text-info hover:underline">
+                    Details →
+                  </Link>
+                </div>
               </div>
             </div>
           </section>
