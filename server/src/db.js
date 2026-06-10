@@ -37,6 +37,14 @@ export async function connectDb() {
     database.collection("reputation").createIndex({ points: -1 }),
   ]);
 
+  // Self-heal: legacy accounts saved phone:"" which collides on the unique
+  // sparse phone index and blocked all later sign-ups. Drop the empty value so
+  // the index ignores those rows. Idempotent — safe to run on every boot.
+  await database.collection("users").updateMany(
+    { phone: "" },
+    { $unset: { phone: "" } }
+  );
+
   return database;
 }
 

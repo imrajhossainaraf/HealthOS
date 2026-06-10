@@ -52,10 +52,12 @@ authRouter.post("/register", validate(registerSchema), async (req, res, next) =>
       email: normalizedEmail,
       passwordHash,
       name: name || "",
-      phone: phone || "",
       verified: false,
       authProvider: "password",
     };
+    // Only store phone when provided. An empty string would collide on the
+    // unique *sparse* phone index (sparse skips absent fields, NOT "").
+    if (phone) fields.phone = phone;
 
     if (existing) {
       // Unverified re-registration: refresh credentials and re-send a code.

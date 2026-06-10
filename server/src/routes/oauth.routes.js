@@ -73,11 +73,12 @@ oauthRouter.get("/google/callback", async (req, res, next) => {
       );
       userDoc = { ...existing, verified: true, name: existing.name || profile.name || "" };
     } else {
+      // No `phone` key: an empty string would collide on the unique *sparse*
+      // phone index (sparse skips absent fields, not empty strings).
       const doc = {
         email,
         passwordHash: null,
         name: profile.name || "",
-        phone: "",
         verified: true,
         authProvider: "google",
         created_at: new Date().toISOString(),
