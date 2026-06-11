@@ -133,32 +133,34 @@ export default function DashboardPage() {
     <div className="pb-16">
       {/* ============== HEADER (welcome + compact stats) ============== */}
       <header>
-        <div className="mx-auto flex max-w-6xl flex-wrap items-start justify-between gap-6 px-4 pt-10 sm:px-6 animate-fade-up">
-          <div>
-            <p className="text-sm text-muted">{today}</p>
-            <h1 className="mt-1 font-display text-3xl font-bold sm:text-4xl">
-              Welcome back, <span className="text-gradient-animated">{firstName}</span> 👋
-            </h1>
-            <p className="mt-1 text-muted">Your unified health overview.</p>
-          </div>
+        <div className="mx-auto max-w-6xl px-4 pt-8 sm:px-6 sm:pt-10">
+          <div className="flex flex-col gap-5 animate-fade-up lg:flex-row lg:items-center lg:justify-between lg:gap-8">
+            <div className="min-w-0">
+              <p className="text-xs text-muted sm:text-sm">{today}</p>
+              <h1 className="mt-1 font-display text-2xl font-bold sm:text-4xl">
+                Welcome back, <span className="text-gradient-animated">{firstName}</span> 👋
+              </h1>
+              <p className="mt-1 text-sm text-muted sm:text-base">Your unified health overview.</p>
+            </div>
 
-          {/* Compact stats — top right, icon + data */}
-          <div className="grid grid-cols-2 gap-x-6 gap-y-3">
-            <StatItem Icon={Scale} tint="text-primary" chip="bg-primary/10" value={bmi ? bmi.value : "—"} label={bmi ? `BMI · ${bmi.category}` : "BMI"} />
-            <StatItem Icon={Droplet} tint="text-emergency" chip="bg-emergency/10" value={profile.bloodGroup || "—"} label="Blood group" />
-            <StatItem Icon={GlassWater} tint="text-info" chip="bg-info/10" value={`${todayWater}/8`} label="Glasses today" />
-            <StatItem Icon={CircleCheck} tint="text-success" chip="bg-success/10" value={`${profileComplete}%`} label="Profile complete" />
+            {/* Stats — premium glass card, 2×2; full width on mobile, compact on desktop */}
+            <div className="glass grid w-full grid-cols-2 gap-x-4 gap-y-4 rounded-2xl p-4 sm:gap-x-8 lg:w-auto lg:shrink-0">
+              <StatItem Icon={Scale} tint="text-primary" chip="bg-primary/10" value={bmi ? bmi.value : "—"} label={bmi ? `BMI · ${bmi.category}` : "BMI"} />
+              <StatItem Icon={Droplet} tint="text-emergency" chip="bg-emergency/10" value={profile.bloodGroup || "—"} label="Blood group" />
+              <StatItem Icon={GlassWater} tint="text-info" chip="bg-info/10" value={`${todayWater}/8`} label="Glasses today" />
+              <StatItem Icon={CircleCheck} tint="text-success" chip="bg-success/10" value={`${profileComplete}%`} label="Profile complete" />
+            </div>
           </div>
         </div>
       </header>
 
       {/* ============== CHART + QUICK ACCESS ============== */}
-      <div className="mx-auto mt-8 grid max-w-6xl gap-6 px-4 sm:px-6 lg:grid-cols-[1.6fr_1fr]">
+      <div className="mx-auto mt-6 grid max-w-6xl gap-5 px-4 sm:mt-8 sm:gap-6 sm:px-6 lg:grid-cols-[1.6fr_1fr]">
         <AlertsGraph history={history} />
 
-        <section className="glass rounded-2xl p-6">
+        <section className="glass rounded-2xl p-5 sm:p-6">
           <h2 className="mb-4 font-display text-lg font-semibold">Quick access</h2>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
             {QUICK.map((q) => (
               <Link
                 key={q.href}
@@ -176,9 +178,9 @@ export default function DashboardPage() {
       </div>
 
       {/* ============== MAIN GRID ============== */}
-      <div className="mx-auto mt-10 grid max-w-6xl gap-6 px-4 sm:px-6 lg:grid-cols-[1.6fr_1fr]">
+      <div className="mx-auto mt-8 grid max-w-6xl gap-5 px-4 sm:mt-10 sm:gap-6 sm:px-6 lg:grid-cols-[1.6fr_1fr]">
         {/* LEFT */}
-        <div className="space-y-6">
+        <div className="space-y-5 sm:space-y-6">
           {/* Guardian overview */}
           <section className="glass rounded-2xl p-6">
             <div className="mb-4 flex items-center justify-between">
@@ -280,7 +282,7 @@ export default function DashboardPage() {
         </div>
 
         {/* RIGHT RAIL */}
-        <div className="space-y-6">
+        <div className="space-y-5 sm:space-y-6">
           <ReputationBadge points={community?.points || 0} />
 
           {/* Hydration ring */}
@@ -486,12 +488,12 @@ function smoothPath(pts) {
 function StatItem({ Icon, value, label, tint, chip = "bg-surface-2" }) {
   return (
     <div className="flex items-center gap-2.5">
-      <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${chip} ${tint}`}>
-        {Icon && <Icon className="h-5 w-5" strokeWidth={2} />}
+      <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl sm:h-10 sm:w-10 ${chip} ${tint}`}>
+        {Icon && <Icon className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={2} />}
       </span>
       <div className="min-w-0">
-        <p className={`font-display text-xl font-bold leading-none ${tint}`}>{value}</p>
-        <p className="mt-1 truncate text-xs text-muted">{label}</p>
+        <p className={`font-display text-lg font-bold leading-none sm:text-xl ${tint}`}>{value}</p>
+        <p className="mt-1 truncate text-[11px] text-muted sm:text-xs">{label}</p>
       </div>
     </div>
   );
