@@ -296,6 +296,7 @@ export default function DashboardPage() {
                   {todayWater}
                   <span className="text-base font-normal"> / 8 glasses</span>
                 </p>
+                {/* I want to eat */}
                 <div className="mt-2 flex items-center gap-2">
                   <button
                     type="button"
