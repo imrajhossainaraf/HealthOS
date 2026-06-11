@@ -104,6 +104,16 @@ export function BeaconProvider({ children }) {
         body: `${responder?.name || "A volunteer"} is responding to your SOS and is incoming.`,
       });
     });
+    // Someone triggered an alert link for a person whose contact you are.
+    socket.on("alert:incoming", ({ title, body } = {}) => {
+      push({
+        variant: "emergency",
+        title: title || "🚨 Emergency alert",
+        body: body || "An emergency alert was triggered.",
+        href: "/emergency",
+        actionLabel: "Open",
+      });
+    });
     // A victim cancelled their SOS — purge it from everyone's UI immediately.
     socket.on("sos:cancel", ({ id } = {}) => {
       if (!id) return;

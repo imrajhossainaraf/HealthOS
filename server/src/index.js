@@ -14,6 +14,7 @@ import { donorsRouter } from "./routes/donors.routes.js";
 import { herbsRouter } from "./routes/herbs.routes.js";
 import { outbreaksRouter } from "./routes/outbreaks.routes.js";
 import { alertsRouter } from "./routes/alerts.routes.js";
+import { alertTriggerRouter } from "./routes/alertTrigger.routes.js";
 import { reputationRouter } from "./routes/reputation.routes.js";
 import { aiRouter } from "./routes/ai.routes.js";
 import { initRealtime } from "./realtime.js";
@@ -60,6 +61,7 @@ app.use("/api/donors", donorsRouter);
 app.use("/api/herbs", herbsRouter);
 app.use("/api/outbreaks", outbreaksRouter);
 app.use("/api/alerts", alertsRouter);
+app.use("/api/alert", alertTriggerRouter); // alert-link trigger (POST /:number)
 app.use("/api/reputation", reputationRouter);
 app.use("/api/ai", aiRouter);
 

@@ -123,6 +123,10 @@ export const outbreakApi = {
 // Recent broadcast emergency alerts (last few hours).
 export const alertApi = {
   list: () => apiFetch("/api/alerts", { auth: false }),
+  // Trigger an emergency alert for a registered phone number — notifies that
+  // person's guardian + emergency contacts by email and realtime toast.
+  trigger: (number) =>
+    apiFetch(`/api/alert/${encodeURIComponent(number)}`, { method: "POST", auth: false }),
 };
 
 // AI Health Copilot (OpenRouter-backed). `chat` requires auth.

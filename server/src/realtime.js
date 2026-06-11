@@ -8,6 +8,15 @@ import { config } from "./config.js";
 // In-memory presence of opted-in volunteers: socketId -> { user, email, lat, lng }.
 const volunteers = new Map();
 
+// Module-level Socket.IO server reference so other modules (e.g. the alert-link
+// route) can push realtime events to a specific user's room.
+let ioRef = null;
+
+/** Emit an event to a specific user's personal room (no-op if offline). */
+export function emitToUser(userId, event, payload) {
+  if (ioRef && userId) ioRef.to(`user:${userId}`).emit(event, payload);
+}
+
 function distanceKm(a, b) {
   const toRad = (d) => (d * Math.PI) / 180;
   const R = 6371;
@@ -186,6 +195,7 @@ export function initRealtime(httpServer) {
   const io = new Server(httpServer, {
     cors: { origin: config.clientOrigins, methods: ["GET", "POST"] },
   });
+  ioRef = io;
 
   io.on("connection", async (socket) => {
     const user = await authenticateSocket(socket.handshake.auth?.token);
