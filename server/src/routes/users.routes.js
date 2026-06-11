@@ -5,6 +5,7 @@
 import { Router } from "express";
 import { collections, toObjectId } from "../db.js";
 import { requireAuth } from "../auth.js";
+import { normalizePhone } from "../phone.js";
 
 export const usersRouter = Router();
 
@@ -78,11 +79,18 @@ async function publicEmergencyProfile(user) {
   };
 }
 
-// GET /api/users/by-phone/:phone — lookup by registered phone number.
+// GET /api/users/by-phone/:phone — lookup by registered phone number. Both
+// sides are normalized to "+880XXXXXXXXXX" so it matches regardless of how
+// the number was entered (with/without +880, spaces, dashes, leading 0).
 usersRouter.get("/by-phone/:phone", async (req, res, next) => {
   try {
-    const phone = String(req.params.phone).trim();
-    const user = await collections.users().findOne({ phone, verified: true });
+    const target = normalizePhone(req.params.phone);
+    if (target.length < 11) return res.status(400).json({ error: "Invalid phone number" });
+    const candidates = await collections
+      .users()
+      .find({ verified: true, phone: { $exists: true, $ne: "" } })
+      .toArray();
+    const user = candidates.find((u) => normalizePhone(u.phone) === target);
     if (!user) return res.status(404).json({ error: "No verified user with that phone number" });
     res.json({ user: await publicEmergencyProfile(user) });
   } catch (err) {

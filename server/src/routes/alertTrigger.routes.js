@@ -8,27 +8,25 @@ import { collections } from "../db.js";
 import { sendSosEmail } from "../email.js";
 import { emitToUser } from "../realtime.js";
 import { sendPushToUsers } from "../push.js";
+import { normalizePhone } from "../phone.js";
 
 export const alertTriggerRouter = Router();
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-/** Strip formatting so numbers compare regardless of spaces/dashes/parens. */
-const normPhone = (p) => String(p || "").replace(/[\s\-()]/g, "");
-
 alertTriggerRouter.post("/:number", async (req, res, next) => {
   try {
-    const target = normPhone(req.params.number);
-    if (target.length < 6) return res.status(400).json({ error: "Invalid phone number" });
+    const target = normalizePhone(req.params.number);
+    if (target.length < 11) return res.status(400).json({ error: "Invalid phone number" });
 
-    // Find the account that owns this number (normalized comparison, since the
-    // stored phone may carry different formatting than the URL).
+    // Find the account that owns this number — both sides normalized to
+    // "+880XXXXXXXXXX" so it matches regardless of stored/URL formatting.
     const candidates = await collections
       .users()
       .find({ verified: true, phone: { $exists: true, $ne: "" } })
       .project({ _id: 1, name: 1, phone: 1, email: 1 })
       .toArray();
-    const owner = candidates.find((u) => normPhone(u.phone) === target);
+    const owner = candidates.find((u) => normalizePhone(u.phone) === target);
     if (!owner) return res.status(404).json({ error: "No registered user with that number" });
 
     const userId = owner._id.toString();
@@ -57,12 +55,12 @@ alertTriggerRouter.post("/:number", async (req, res, next) => {
     if (EMAIL_RE.test(profile.guardianEmail || "")) {
       emails.set(profile.guardianEmail.toLowerCase(), profile.guardianName ? `guardian (${profile.guardianName})` : "guardian");
     }
-    if (profile.guardianPhone) phones.push(normPhone(profile.guardianPhone));
+    if (profile.guardianPhone) phones.push(normalizePhone(profile.guardianPhone));
     for (const c of contacts) {
       if (EMAIL_RE.test(c.email || "")) {
         emails.set(c.email.toLowerCase(), c.relation ? `emergency contact (${c.relation})` : "emergency contact");
       }
-      if (c.phone) phones.push(normPhone(c.phone));
+      if (c.phone) phones.push(normalizePhone(c.phone));
     }
 
     if (emails.size === 0 && phones.length === 0) {
@@ -84,7 +82,7 @@ alertTriggerRouter.post("/:number", async (req, res, next) => {
       for (const u of byEmail) matchedIds.add(u._id.toString());
     }
     for (const u of candidates) {
-      if (phones.includes(normPhone(u.phone))) matchedIds.add(u._id.toString());
+      if (phones.includes(normalizePhone(u.phone))) matchedIds.add(u._id.toString());
     }
     matchedIds.delete(userId); // don't toast the owner via their own contact list
     const toastBody = `${ownerName} may need help — an emergency alert was triggered for them.`;

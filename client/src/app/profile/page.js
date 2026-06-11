@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { KEYS, useLocalState, calcBMI } from "@/lib/storage";
 import { useAuth } from "@/lib/auth";
+import { normalizeBDPhone } from "@/lib/phone";
 import HealthCard from "@/components/HealthCard";
 
 const EMPTY_PROFILE = {
@@ -39,6 +40,11 @@ export default function ProfilePage() {
 
   const set = (field) => (e) =>
     setProfile((p) => ({ ...p, [field]: e.target.value }));
+
+  // Auto-prefix +880 once the user leaves a phone field, so numbers are stored
+  // in a consistent format for search and emergency-alert lookups.
+  const formatPhone = (field) => () =>
+    setProfile((p) => (p[field] ? { ...p, [field]: normalizeBDPhone(p[field]) } : p));
 
   const bmi = calcBMI(profile.heightCm, profile.weightKg);
 
@@ -86,7 +92,7 @@ export default function ProfilePage() {
                 </select>
               </Field>
               <Field label="Phone number">
-                <input className={inputCls} inputMode="tel" value={profile.phone} onChange={set("phone")} placeholder="+880 1XXX-XXXXXX" autoComplete="off" />
+                <input className={inputCls} inputMode="tel" value={profile.phone} onChange={set("phone")} onBlur={formatPhone("phone")} placeholder="+880 1XXX-XXXXXX" autoComplete="off" />
               </Field>
               <Field label="National ID (NID)">
                 <input className={inputCls} inputMode="numeric" value={profile.nid} onChange={set("nid")} placeholder="e.g. 1990123456789" autoComplete="off" />
@@ -113,7 +119,7 @@ export default function ProfilePage() {
                 <input type="email" className={inputCls} value={profile.guardianEmail} onChange={set("guardianEmail")} placeholder="guardian@example.com" autoComplete="off" />
               </Field>
               <Field label="Phone">
-                <input className={inputCls} inputMode="tel" value={profile.guardianPhone} onChange={set("guardianPhone")} placeholder="+880 1XXX-XXXXXX" autoComplete="off" />
+                <input className={inputCls} inputMode="tel" value={profile.guardianPhone} onChange={set("guardianPhone")} onBlur={formatPhone("guardianPhone")} placeholder="+880 1XXX-XXXXXX" autoComplete="off" />
               </Field>
               <Field label="Parent's National ID (NID)">
                 <input className={inputCls} inputMode="numeric" value={profile.guardianNid} onChange={set("guardianNid")} placeholder="e.g. 1985123456789" autoComplete="off" />
@@ -301,7 +307,7 @@ function ContactManager({ contacts, onChange }) {
     if (!form.name.trim() || !form.phone.trim()) return;
     onChange([
       ...contacts,
-      { ...form, name: form.name.trim(), phone: form.phone.trim(), email: form.email.trim() },
+      { ...form, name: form.name.trim(), phone: normalizeBDPhone(form.phone), email: form.email.trim() },
     ]);
     setForm({ name: "", relation: "", phone: "", email: "" });
   };

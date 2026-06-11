@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import { randomInt } from "node:crypto";
 import { collections, publicUser } from "../db.js";
 import { signToken, requireAuth } from "../auth.js";
+import { normalizePhone } from "../phone.js";
 import { config } from "../config.js";
 import { sendOtpEmail, emailEnabled } from "../email.js";
 import {
@@ -39,9 +40,13 @@ authRouter.post("/register", validate(registerSchema), async (req, res, next) =>
       return res.status(409).json({ error: "An account with this email already exists" });
     }
 
+    // Store phone in canonical "+880XXXXXXXXXX" form so it matches the
+    // by-phone search and alert-link routes regardless of how it was typed.
+    const normalizedPhone = phone ? normalizePhone(phone) : "";
+
     // Reject a phone already tied to a different account.
-    if (phone) {
-      const phoneOwner = await collections.users().findOne({ phone });
+    if (normalizedPhone) {
+      const phoneOwner = await collections.users().findOne({ phone: normalizedPhone });
       if (phoneOwner && phoneOwner.email !== normalizedEmail) {
         return res.status(409).json({ error: "That phone number is already registered" });
       }
@@ -57,7 +62,7 @@ authRouter.post("/register", validate(registerSchema), async (req, res, next) =>
     };
     // Only store phone when provided. An empty string would collide on the
     // unique *sparse* phone index (sparse skips absent fields, NOT "").
-    if (phone) fields.phone = phone;
+    if (normalizedPhone) fields.phone = normalizedPhone;
 
     if (existing) {
       // Unverified re-registration: refresh credentials and re-send a code.

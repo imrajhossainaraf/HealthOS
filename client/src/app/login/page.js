@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/auth";
 import { authApi } from "@/lib/api";
+import { normalizeBDPhone } from "@/lib/phone";
 
 export default function LoginPage() {
   return (
@@ -188,7 +189,16 @@ function LoginInner() {
               </Field>
               {mode === "register" && (
                 <Field label="Phone">
-                  <input type="tel" inputMode="tel" className={inp} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="+880 1XXX-XXXXXX" autoComplete="tel" />
+                  <input
+                    type="tel"
+                    inputMode="tel"
+                    className={inp}
+                    value={form.phone}
+                    onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                    onBlur={() => form.phone && setForm((f) => ({ ...f, phone: normalizeBDPhone(f.phone) }))}
+                    placeholder="+880 1XXX-XXXXXX"
+                    autoComplete="tel"
+                  />
                 </Field>
               )}
               <Field label="Password">
