@@ -11,6 +11,8 @@ import {
 } from "react";
 import { KEYS, useLocalState, writeStorage } from "@/lib/storage";
 import { DEFAULT_CENTER, areaToCoords } from "@/lib/geo";
+import { useAuth } from "@/lib/auth";
+import { userApi } from "@/lib/api";
 
 const LocationContext = createContext(null);
 
@@ -56,6 +58,20 @@ export function LocationProvider({ children }) {
     requestedRef.current = true;
     request();
   }, [request]);
+
+  // Register the signed-in user's location with the server so SOS alerts can
+  // reach whoever is genuinely nearby (server 2dsphere $near). Deduped to ~11m
+  // so we don't spam on every minor re-render; best-effort (failures ignored).
+  const { status } = useAuth();
+  const sentRef = useRef(null);
+  useEffect(() => {
+    const fix = live || stored;
+    if (status !== "authed" || !fix) return;
+    const key = `${fix.lat.toFixed(4)},${fix.lng.toFixed(4)}`;
+    if (sentRef.current === key) return;
+    sentRef.current = key;
+    userApi.updateLocation(fix).catch(() => {});
+  }, [live, stored, status]);
 
   const coords = live || stored || null;
   const lat = coords?.lat ?? null;

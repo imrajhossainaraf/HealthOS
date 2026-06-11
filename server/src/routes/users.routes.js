@@ -4,11 +4,36 @@
 // `healthos:profile` / `healthos:emergencyContacts`.
 import { Router } from "express";
 import { collections, toObjectId } from "../db.js";
+import { requireAuth } from "../auth.js";
 
 export const usersRouter = Router();
 
 const PROFILE_KEY = "healthos:profile";
 const CONTACTS_KEY = "healthos:emergencyContacts";
+
+// POST /api/users/location — the signed-in user shares their current coordinates
+// so SOS alerts can find who is genuinely nearby (2dsphere $near). Authenticated;
+// stored as a GeoJSON Point with a timestamp for freshness filtering. Registered
+// BEFORE the public GET /:id route below (distinct method, but kept explicit).
+usersRouter.post("/location", requireAuth, async (req, res, next) => {
+  try {
+    const lat = Number(req.body?.lat);
+    const lng = Number(req.body?.lng);
+    if (
+      !Number.isFinite(lat) || !Number.isFinite(lng) ||
+      lat < -90 || lat > 90 || lng < -180 || lng > 180
+    ) {
+      return res.status(400).json({ error: "Invalid coordinates" });
+    }
+    await collections.users().updateOne(
+      { _id: toObjectId(req.user.id) },
+      { $set: { lastLocation: { type: "Point", coordinates: [lng, lat] }, lastLocationAt: new Date() } }
+    );
+    res.json({ ok: true });
+  } catch (err) {
+    next(err);
+  }
+});
 
 async function docValue(userId, key) {
   const row = await collections.documents().findOne({ userId, key });

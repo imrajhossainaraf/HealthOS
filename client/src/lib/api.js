@@ -87,6 +87,8 @@ export const authApi = {
 export const userApi = {
   byId: (id) => apiFetch(`/api/users/${encodeURIComponent(id)}`, { auth: false }),
   byPhone: (phone) => apiFetch(`/api/users/by-phone/${encodeURIComponent(phone)}`, { auth: false }),
+  // Persist the signed-in user's coordinates so SOS alerts can find them nearby.
+  updateLocation: ({ lat, lng }) => apiFetch("/api/users/location", { method: "POST", body: { lat, lng } }),
 };
 
 export const storeApi = {
