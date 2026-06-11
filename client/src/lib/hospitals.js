@@ -31,6 +31,53 @@ const CURATED = [
   { name: "National Heart Foundation Hospital", lat: 23.8, lng: 90.363, phone: "+880 2 9122122" },
 ];
 
+// Real, hardcoded hospitals & clinics in Sonaimuri, Noakhali — verified contact
+// numbers (see hospital.md). Coordinates are clustered around Sonaimuri Bazar /
+// Thana, the town centre (23.0509, 91.1113).
+export const SONAIMURI_CENTER = [23.0509, 91.1113];
+
+export const SONAIMURI_HOSPITALS = [
+  {
+    id: "sonaimuri-uhc",
+    name: "Sonaimuri Upazila Health Complex",
+    lat: 23.0518,
+    lng: 91.1098,
+    phone: "01730-324865",
+    address: "Begumganj-Sonaimuri-Ramganj Rd, Sonaimuri, Noakhali",
+    emergency: true,
+  },
+  {
+    id: "sonaimuri-maa-shishu",
+    name: "Sonaimuri Maa O Shishu Hospital",
+    lat: 23.0509,
+    lng: 91.1113,
+    phone: "01705-319271",
+    address: "Opposite Shwapno Super Shop, near Sonaimuri Thana, Sonaimuri, Noakhali",
+    emergency: true,
+  },
+  {
+    id: "sonaimuri-general",
+    name: "Sonaimuri General Hospital",
+    lat: 23.0485,
+    lng: 91.1142,
+    phone: "01714-369695",
+    address: "Chatar Paiya Road, Sonaimuri, Noakhali",
+  },
+  {
+    id: "sonaimuri-central",
+    name: "Sonaimuri Central Hospital (Pvt)",
+    lat: 23.053,
+    lng: 91.1128,
+    phone: "01720-546174",
+    address: "Ema Plaza, Ishakmia Sarak, Sonaimuri, Noakhali",
+  },
+];
+
+/** Hardcoded Sonaimuri hospitals decorated with distance/photo for display. */
+export function getSonaimuriHospitals(origin = SONAIMURI_CENTER) {
+  return decorate(SONAIMURI_HOSPITALS, origin);
+}
+
 function decorate(list, origin) {
   return list
     .map((h) => ({
