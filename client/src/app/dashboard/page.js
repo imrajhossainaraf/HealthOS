@@ -195,6 +195,9 @@ export default function DashboardPage() {
       <div className="mx-auto mt-10 grid max-w-6xl gap-6 px-4 sm:px-6 lg:grid-cols-[1.6fr_1fr]">
         {/* LEFT */}
         <div className="space-y-6">
+          {/* Emergency alerts graph */}
+          <AlertsGraph history={history} />
+
           {/* Guardian overview */}
           <section className="glass rounded-2xl p-6">
             <div className="mb-4 flex items-center justify-between">
@@ -403,6 +406,57 @@ export default function DashboardPage() {
 }
 
 /* ---------------- Sub-components ---------------- */
+
+function AlertsGraph({ history = [] }) {
+  const days = 7;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const buckets = Array.from({ length: days }, (_, i) => {
+    const d = new Date(today);
+    d.setDate(d.getDate() - (days - 1 - i));
+    return { label: d.toLocaleDateString(undefined, { weekday: "short" }), time: d.getTime(), count: 0 };
+  });
+  for (const e of history) {
+    const t = new Date(e.timestamp);
+    if (isNaN(t)) continue;
+    t.setHours(0, 0, 0, 0);
+    const b = buckets.find((x) => x.time === t.getTime());
+    if (b) b.count += 1;
+  }
+  const total = buckets.reduce((s, b) => s + b.count, 0);
+  const max = Math.max(1, ...buckets.map((b) => b.count));
+
+  return (
+    <section className="glass rounded-2xl p-6">
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="font-display text-lg font-semibold">🚨 Emergency Alerts</h2>
+        <span className="text-xs text-muted">last 7 days · {total} total</span>
+      </div>
+      <div className="flex h-32 items-end gap-2">
+        {buckets.map((b, i) => (
+          <div key={i} className="flex h-full flex-1 flex-col items-center justify-end">
+            {b.count > 0 && (
+              <span className="mb-1 text-[11px] font-semibold text-emergency">{b.count}</span>
+            )}
+            <div
+              className="w-full rounded-t bg-emergency transition-all"
+              style={{ height: `${(b.count / max) * 100}%`, minHeight: "3px", opacity: b.count ? 1 : 0.2 }}
+              title={`${b.label}: ${b.count} alert${b.count === 1 ? "" : "s"}`}
+            />
+          </div>
+        ))}
+      </div>
+      <div className="mt-1 flex gap-2">
+        {buckets.map((b, i) => (
+          <span key={i} className="flex-1 text-center text-[10px] text-muted">{b.label}</span>
+        ))}
+      </div>
+      {total === 0 && (
+        <p className="mt-2 text-xs text-muted">No emergency alerts this week — stay safe.</p>
+      )}
+    </section>
+  );
+}
 
 function StatCard({ icon, value, label, tint, delay = 0 }) {
   return (

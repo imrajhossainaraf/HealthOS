@@ -9,19 +9,20 @@ import { useAuth } from "@/lib/auth";
 const PRIMARY = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/emergency", label: "Emergency" },
+  { href: "/alerts", label: "Alerts" },
   { href: "/community", label: "Community" },
   { href: "/profile", label: "Health Card" },
   { href: "/family", label: "Family" },
+  { href: "/hospitals", label: "🏥 Hospitals" },
+  { href: "/ai-assistant", label: "✨ Agent" },
 ];
 
 // Everything else, tucked into the "More" dropdown.
 const MORE = [
-  { href: "/ai-assistant", label: "✨ Agent" },
   { href: "/herbal", label: "🌿 Herbal" },
   { href: "/disease-watch", label: "🦠 Disease Watch" },
   { href: "/fitness", label: "💪 Fitness" },
   { href: "/mental-wellness", label: "🧠 Mental Wellness" },
-  { href: "/hospitals", label: "🏥 Hospitals" },
   { href: "/knowledge", label: "📚 Knowledge" },
   { href: "/emergency-history", label: "📋 Timeline" },
 ];
