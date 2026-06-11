@@ -31,9 +31,10 @@ export default function FitnessPage() {
   const water = data.waterDate === today() ? data.water : 0;
   // Defensive: the fitness object may be a partial shape (e.g. written by the
   // dashboard's quick water logger as { water, waterDate }), so these can be
-  // missing. Never assume the arrays exist.
+  // missing. Never assume fields exist.
   const bmiLog = Array.isArray(data.bmiLog) ? data.bmiLog : [];
   const activities = Array.isArray(data.activities) ? data.activities : [];
+  const goal = PLANS[data.goal] ? data.goal : "Lose Weight";
 
   const addWater = (delta) =>
     setData((d) => ({
@@ -84,7 +85,7 @@ export default function FitnessPage() {
                 type="button"
                 onClick={() => setData((d) => ({ ...d, goal: g }))}
                 className={`rounded-full border px-3 py-1.5 text-sm ${
-                  data.goal === g ? "border-primary bg-primary/15 text-primary" : "border-border text-muted hover:text-text"
+                  goal === g ? "border-primary bg-primary/15 text-primary" : "border-border text-muted hover:text-text"
                 }`}
               >
                 {g}
@@ -92,7 +93,7 @@ export default function FitnessPage() {
             ))}
           </div>
           <ul className="mt-4 space-y-2">
-            {PLANS[data.goal].map((p, i) => (
+            {PLANS[goal].map((p, i) => (
               <li key={i} className="flex gap-2 rounded-lg border border-border bg-surface px-3 py-2 text-sm">
                 <span className="text-primary">✓</span> {p}
               </li>
