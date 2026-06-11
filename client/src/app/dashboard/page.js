@@ -2,6 +2,10 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import {
+  Siren, Hospital, IdCard, Droplet, UsersRound, Bot, Leaf, Dumbbell, Brain,
+  Activity, BookOpen, History, Scale, GlassWater, CircleCheck,
+} from "lucide-react";
 import { KEYS, useLocalState, calcBMI } from "@/lib/storage";
 import { useAuth } from "@/lib/auth";
 import ReputationBadge from "@/components/ReputationBadge";
@@ -12,12 +16,12 @@ const img = (id, w = 1200) =>
 
 /* Fast, always-visible destinations shown at the top of the dashboard. */
 const QUICK = [
-  { href: "/emergency", label: "Emergency", icon: "🚨", chip: "bg-emergency/10 text-emergency" },
-  { href: "/hospitals", label: "Hospitals", icon: "🏥", chip: "bg-primary/10 text-primary" },
-  { href: "/profile", label: "Health Card", icon: "🪪", chip: "bg-info/10 text-info" },
-  { href: "/community", label: "Community", icon: "🩸", chip: "bg-emergency/10 text-emergency" },
-  { href: "/family", label: "Family", icon: "👨‍👩‍👧", chip: "bg-family/10 text-family" },
-  { href: "/ai-assistant", label: "AI Copilot", icon: "🤖", chip: "bg-success/10 text-success" },
+  { href: "/emergency", label: "Emergency", Icon: Siren, chip: "bg-emergency/10 text-emergency" },
+  { href: "/hospitals", label: "Hospitals", Icon: Hospital, chip: "bg-primary/10 text-primary" },
+  { href: "/profile", label: "Health Card", Icon: IdCard, chip: "bg-info/10 text-info" },
+  { href: "/community", label: "Community", Icon: Droplet, chip: "bg-emergency/10 text-emergency" },
+  { href: "/family", label: "Family", Icon: UsersRound, chip: "bg-family/10 text-family" },
+  { href: "/ai-assistant", label: "AI Copilot", Icon: Bot, chip: "bg-success/10 text-success" },
 ];
 
 const FEATURES = [
@@ -25,7 +29,7 @@ const FEATURES = [
     href: "/emergency",
     title: "Emergency Response",
     desc: "One-tap SOS that escalates to family, contacts, and nearby responders.",
-    icon: "🚨",
+    Icon: Siren,
     img: img("photo-1519494026892-80bbd2d6fd0d", 800),
     ring: "ring-emergency/30",
     chip: "bg-emergency/10 text-emergency",
@@ -34,7 +38,7 @@ const FEATURES = [
     href: "/community",
     title: "Blood & Community",
     desc: "Find donors on the live map and build trusted community reputation.",
-    icon: "🩸",
+    Icon: Droplet,
     img: img("photo-1576091160550-2173dba999ef", 800),
     ring: "ring-info/30",
     chip: "bg-info/10 text-info",
@@ -43,7 +47,7 @@ const FEATURES = [
     href: "/herbal",
     title: "Herbal Knowledge",
     desc: "Traditional remedies and preparations, shared across the network.",
-    icon: "🌿",
+    Icon: Leaf,
     img: img("photo-1501004318641-b39e6451bec6", 800),
     ring: "ring-herbal/30",
     chip: "bg-herbal/10 text-herbal",
@@ -52,7 +56,7 @@ const FEATURES = [
     href: "/fitness",
     title: "Fitness Tracker",
     desc: "Hydration, steps, and daily goals — small habits, lasting health.",
-    icon: "💪",
+    Icon: Dumbbell,
     img: img("photo-1571019613454-1cb2f99b2d8b", 800),
     ring: "ring-success/30",
     chip: "bg-success/10 text-success",
@@ -61,7 +65,7 @@ const FEATURES = [
     href: "/mental-wellness",
     title: "Mental Wellness",
     desc: "Mood check-ins, breathing exercises, and calm when you need it.",
-    icon: "🧠",
+    Icon: Brain,
     img: img("photo-1506126613408-eca07ce68773", 800),
     ring: "ring-family/30",
     chip: "bg-family/10 text-family",
@@ -70,7 +74,7 @@ const FEATURES = [
     href: "/hospitals",
     title: "Hospitals Nearby",
     desc: "Locate the closest hospitals and ambulances from where you are.",
-    icon: "🏥",
+    Icon: Hospital,
     img: img("photo-1538108149393-fbbd81895907", 800),
     ring: "ring-primary/30",
     chip: "bg-primary/10 text-primary",
@@ -78,12 +82,12 @@ const FEATURES = [
 ];
 
 const MODULES = [
-  { href: "/disease-watch", label: "Disease Watch", icon: "🦠" },
-  { href: "/knowledge", label: "Knowledge", icon: "📚" },
-  { href: "/emergency-history", label: "Timeline", icon: "📋" },
-  { href: "/herbal", label: "Herbal", icon: "🌿" },
-  { href: "/fitness", label: "Fitness", icon: "💪" },
-  { href: "/mental-wellness", label: "Mental", icon: "🧠" },
+  { href: "/disease-watch", label: "Disease Watch", Icon: Activity, tint: "text-warning" },
+  { href: "/knowledge", label: "Knowledge", Icon: BookOpen, tint: "text-info" },
+  { href: "/emergency-history", label: "Timeline", Icon: History, tint: "text-emergency" },
+  { href: "/herbal", label: "Herbal", Icon: Leaf, tint: "text-herbal" },
+  { href: "/fitness", label: "Fitness", Icon: Dumbbell, tint: "text-success" },
+  { href: "/mental-wellness", label: "Mental", Icon: Brain, tint: "text-family" },
 ];
 
 export default function DashboardPage() {
@@ -146,9 +150,9 @@ export default function DashboardPage() {
                 className="glass card-rise animate-rise-in flex items-center gap-2.5 rounded-2xl px-3 py-3"
               >
                 <span
-                  className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl text-lg ${q.chip}`}
+                  className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl ${q.chip}`}
                 >
-                  {q.icon}
+                  <q.Icon className="h-5 w-5" strokeWidth={2} />
                 </span>
                 <span className="truncate text-sm font-medium">{q.label}</span>
               </Link>
@@ -162,29 +166,33 @@ export default function DashboardPage() {
         <div className="mt-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
           <StatCard
             delay={0.15}
-            icon="⚖️"
+            Icon={Scale}
             tint="text-primary"
+            chip="bg-primary/10"
             value={bmi ? bmi.value : "—"}
             label={bmi ? `BMI · ${bmi.category}` : "BMI — add height/weight"}
           />
           <StatCard
             delay={0.22}
-            icon="🩸"
+            Icon={Droplet}
             tint="text-emergency"
+            chip="bg-emergency/10"
             value={profile.bloodGroup || "—"}
             label="Blood group"
           />
           <StatCard
             delay={0.29}
-            icon="💧"
+            Icon={GlassWater}
             tint="text-info"
+            chip="bg-info/10"
             value={`${todayWater}/8`}
             label="Glasses today"
           />
           <StatCard
             delay={0.36}
-            icon="✅"
+            Icon={CircleCheck}
             tint="text-success"
+            chip="bg-success/10"
             value={`${profileComplete}%`}
             label="Profile complete"
           />
@@ -348,7 +356,7 @@ export default function DashboardPage() {
                   href={m.href}
                   className="glass-hover flex flex-col items-center gap-1.5 rounded-xl border border-border bg-surface p-3 text-center"
                 >
-                  <span className="text-2xl">{m.icon}</span>
+                  <m.Icon className={`h-6 w-6 ${m.tint}`} strokeWidth={2} />
                   <span className="text-[11px] font-medium leading-tight">{m.label}</span>
                 </Link>
               ))}
@@ -439,7 +447,9 @@ function AlertsGraph({ history = [] }) {
   return (
     <section className="glass rounded-2xl p-6">
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="font-display text-lg font-semibold">🚨 Emergency Alerts</h2>
+        <h2 className="flex items-center gap-2 font-display text-lg font-semibold">
+          <Siren className="h-5 w-5 text-emergency" strokeWidth={2} /> Emergency Alerts
+        </h2>
         <span className="text-xs text-muted">last 14 days · {total} total</span>
       </div>
 
@@ -500,15 +510,15 @@ function smoothPath(pts) {
   return d.join(" ");
 }
 
-function StatCard({ icon, value, label, tint, delay = 0 }) {
+function StatCard({ Icon, value, label, tint, chip = "bg-surface-2", delay = 0 }) {
   return (
     <div
       style={{ animationDelay: `${delay}s` }}
       className="glass card-rise animate-rise-in rounded-2xl p-5"
     >
-      <div className="flex items-center justify-between">
-        <span className="text-2xl">{icon}</span>
-      </div>
+      <span className={`grid h-10 w-10 place-items-center rounded-xl ${chip} ${tint}`}>
+        {Icon && <Icon className="h-5 w-5" strokeWidth={2} />}
+      </span>
       <p className={`mt-3 font-display text-3xl font-bold ${tint}`}>{value}</p>
       <p className="mt-1 text-xs text-muted">{label}</p>
     </div>
@@ -531,9 +541,9 @@ function FeatureCard({ feature: f }) {
         />
         <div className="absolute inset-0 bg-linear-to-t from-black/40 to-transparent" />
         <span
-          className={`absolute left-3 top-3 grid h-9 w-9 place-items-center rounded-xl text-lg backdrop-blur ${f.chip}`}
+          className={`absolute left-3 top-3 grid h-9 w-9 place-items-center rounded-xl backdrop-blur ${f.chip}`}
         >
-          {f.icon}
+          <f.Icon className="h-5 w-5" strokeWidth={2} />
         </span>
       </div>
       <div className="p-5">

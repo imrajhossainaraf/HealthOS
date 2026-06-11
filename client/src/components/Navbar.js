@@ -3,6 +3,9 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import {
+  HeartPulse, Siren, User, Leaf, Activity, Dumbbell, Brain, BookOpen, History,
+} from "lucide-react";
 import { useAuth } from "@/lib/auth";
 
 // Top-level links always visible on desktop.
@@ -13,18 +16,18 @@ const PRIMARY = [
   { href: "/community", label: "Community" },
   { href: "/profile", label: "Health Card" },
   { href: "/family", label: "Family" },
-  { href: "/hospitals", label: "🏥 Hospitals" },
-  { href: "/ai-assistant", label: "✨ Agent" },
+  { href: "/hospitals", label: "Hospitals" },
+  { href: "/ai-assistant", label: "Agent" },
 ];
 
 // Everything else, tucked into the "More" dropdown.
 const MORE = [
-  { href: "/herbal", label: "🌿 Herbal" },
-  { href: "/disease-watch", label: "🦠 Disease Watch" },
-  { href: "/fitness", label: "💪 Fitness" },
-  { href: "/mental-wellness", label: "🧠 Mental Wellness" },
-  { href: "/knowledge", label: "📚 Knowledge" },
-  { href: "/emergency-history", label: "📋 Timeline" },
+  { href: "/herbal", label: "Herbal", Icon: Leaf },
+  { href: "/disease-watch", label: "Disease Watch", Icon: Activity },
+  { href: "/fitness", label: "Fitness", Icon: Dumbbell },
+  { href: "/mental-wellness", label: "Mental Wellness", Icon: Brain },
+  { href: "/knowledge", label: "Knowledge", Icon: BookOpen },
+  { href: "/emergency-history", label: "Timeline", Icon: History },
 ];
 
 export default function Navbar() {
@@ -58,7 +61,7 @@ export default function Navbar() {
           onClick={() => setOpen(false)}
         >
           <span className="grid h-8 w-8 place-items-center rounded-xl bg-primary/15 text-primary ring-1 ring-primary/30">
-            ✚
+            <HeartPulse className="h-5 w-5" strokeWidth={2.2} />
           </span>
           <span>
             Health<span className="text-primary">OS</span>
@@ -117,12 +120,13 @@ export default function Navbar() {
                       href={l.href}
                       role="menuitem"
                       onClick={() => setMoreOpen(false)}
-                      className={`block rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                      className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                         isActive(l.href)
                           ? "bg-primary/15 text-primary"
                           : "text-muted hover:bg-surface-2 hover:text-text"
                       }`}
                     >
+                      <l.Icon className="h-4 w-4" strokeWidth={2} />
                       {l.label}
                     </Link>
                   ))}
@@ -136,8 +140,8 @@ export default function Navbar() {
         <div className="hidden items-center gap-2 lg:flex">
           {status === "authed" ? (
             <div className="flex items-center gap-2">
-              <Link href="/account" className="rounded-lg px-2 py-2 text-sm font-medium text-muted hover:text-text" title="Account">
-                👤 {user?.name?.split(" ")[0] || "Account"}
+              <Link href="/account" className="flex items-center gap-1.5 rounded-lg px-2 py-2 text-sm font-medium text-muted hover:text-text" title="Account">
+                <User className="h-4 w-4" strokeWidth={2} /> {user?.name?.split(" ")[0] || "Account"}
               </Link>
               <button type="button" onClick={logout} className="rounded-lg border border-border px-3 py-2 text-sm text-muted hover:text-text">
                 Sign out
@@ -154,7 +158,7 @@ export default function Navbar() {
             href="/emergency?sos=1"
             className="flex items-center gap-2 rounded-xl bg-emergency px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-emergency/25 transition-transform hover:scale-105"
           >
-            🚨 SOS
+            <Siren className="h-4 w-4" strokeWidth={2.4} /> SOS
           </Link>
         </div>
 
@@ -179,12 +183,13 @@ export default function Navbar() {
                 <Link
                   href={l.href}
                   onClick={() => setOpen(false)}
-                  className={`block rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                  className={`flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
                     isActive(l.href)
                       ? "bg-primary/15 text-primary"
                       : "text-muted hover:bg-surface-2 hover:text-text"
                   }`}
                 >
+                  {l.Icon && <l.Icon className="h-4 w-4" strokeWidth={2} />}
                   {l.label}
                 </Link>
               </li>
@@ -193,9 +198,9 @@ export default function Navbar() {
               <Link
                 href="/emergency?sos=1"
                 onClick={() => setOpen(false)}
-                className="block rounded-lg bg-emergency px-3 py-2.5 text-center text-sm font-semibold text-white"
+                className="flex items-center justify-center gap-2 rounded-lg bg-emergency px-3 py-2.5 text-center text-sm font-semibold text-white"
               >
-                🚨 Emergency SOS
+                <Siren className="h-4 w-4" strokeWidth={2.4} /> Emergency SOS
               </Link>
             </li>
             <li>
