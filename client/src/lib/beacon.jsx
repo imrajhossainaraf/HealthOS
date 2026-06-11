@@ -15,6 +15,7 @@ import { DEFAULT_CENTER, distanceKm } from "@/lib/geo";
 import { useLocation } from "@/lib/location";
 import { useToast } from "@/lib/toast";
 import { useAuth } from "@/lib/auth";
+import { initAlertSound, playSiren, showAlertNotification } from "@/lib/siren";
 
 // Merge a responder into an alert's responders list (dedup by email).
 function withResponder(alert, responder) {
@@ -45,10 +46,19 @@ export function BeaconProvider({ children }) {
 
   const [optedIn] = useLocalState(KEYS.community + ":volunteerOptIn", false);
 
-  // Keep latest coords available to the (stable) socket handler.
+  // Keep latest coords + volunteer state available to the (stable) socket handler.
   useEffect(() => {
     coordsRef.current = coords;
   }, [coords]);
+  const optedInRef = useRef(optedIn);
+  useEffect(() => {
+    optedInRef.current = optedIn;
+  }, [optedIn]);
+
+  // Prime the siren/notification permissions on the first user gesture.
+  useEffect(() => {
+    initAlertSound();
+  }, []);
 
   // Format an incoming alert into a human distance/where string.
   const describe = useCallback((alert) => {
@@ -87,6 +97,12 @@ export function BeaconProvider({ children }) {
         href: "/emergency#live-map",
         actionLabel: "Respond",
       });
+      // Sound the siren + OS notification for opted-in responders, so they're
+      // alerted even with the tab in the background.
+      if (optedInRef.current) {
+        playSiren();
+        showAlertNotification("🚨 Emergency alert", `${alert.victim} needs help — ${alert.reason} · ${where}.`);
+      }
     });
     // Someone tapped "Respond" — reflect it on every client instantly.
     socket.on("sos:responded", ({ id, responder } = {}) => {
@@ -113,6 +129,9 @@ export function BeaconProvider({ children }) {
         href: "/emergency",
         actionLabel: "Open",
       });
+      // This alert is targeted at THIS user (a contact) — always sound it.
+      playSiren();
+      showAlertNotification(title || "🚨 Emergency alert", body || "An emergency alert was triggered.");
     });
     // A victim cancelled their SOS — purge it from everyone's UI immediately.
     socket.on("sos:cancel", ({ id } = {}) => {
