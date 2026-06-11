@@ -58,7 +58,7 @@ export default function EmergencyPage() {
 
   // Realtime: incoming alerts (app-wide beacon) + live responder reach.
   const [liveReach, setLiveReach] = useState(null);
-  const { connected, activate, cancel, incomingAlert, clearAlert, recentAlerts } = useBeaconContext();
+  const { connected, activate, cancel, respond, incomingAlert, clearAlert, recentAlerts } = useBeaconContext();
   const { push } = useToast();
 
   // Simulated nearby volunteers scattered around the user/center, with distances.
@@ -221,16 +221,35 @@ export default function EmergencyPage() {
       </p>
 
       {/* Incoming alert for opted-in volunteers (real-time) */}
-      {incomingAlert && (
-        <div className="mt-4 flex items-center justify-between gap-3 rounded-2xl border border-emergency bg-emergency/15 p-4 text-sm animate-pulse-glow">
-          <span>
-            ⚠️ <b>{incomingAlert.victim} needs immediate assistance</b> — {incomingAlert.reason} · {incomingAlert.where}
-          </span>
-          <button type="button" onClick={clearAlert} className="rounded-lg bg-emergency px-3 py-1.5 font-semibold text-white">
-            Dismiss
-          </button>
-        </div>
-      )}
+      {incomingAlert && (() => {
+        const responders = incomingAlert.responders || [];
+        const responded = responders.length > 0;
+        const iResponded = responders.some((r) => r.email === user?.email?.toLowerCase());
+        return (
+          <div className={`mt-4 rounded-2xl border p-4 text-sm transition-colors ${responded ? "border-success bg-success/15" : "border-emergency bg-emergency/15 animate-pulse-glow"}`}>
+            <div className="flex items-center justify-between gap-3">
+              <span>
+                {responded ? "✅" : "⚠️"} <b>{incomingAlert.victim} needs immediate assistance</b> — {incomingAlert.reason} · {incomingAlert.where}
+              </span>
+              <div className="flex shrink-0 items-center gap-2">
+                {incomingAlert.id && !iResponded && (
+                  <button type="button" onClick={() => respond(incomingAlert.id)} className="rounded-lg bg-success px-3 py-1.5 font-semibold text-white">
+                    Respond
+                  </button>
+                )}
+                <button type="button" onClick={clearAlert} className="rounded-lg bg-emergency px-3 py-1.5 font-semibold text-white">
+                  Dismiss
+                </button>
+              </div>
+            </div>
+            {responded && (
+              <p className="mt-2 text-xs font-medium text-success">
+                🟢 {responders.length} responding — {responders.map((r) => r.email).join(", ")}
+              </p>
+            )}
+          </div>
+        );
+      })()}
 
       {/* ---------- SOS BUTTON  +  LIVE MAP (side by side) ---------- */}
       <div className="mt-6 grid gap-6 lg:grid-cols-2 lg:items-stretch">
@@ -368,23 +387,50 @@ export default function EmergencyPage() {
                 coords && typeof a.lat === "number"
                   ? `${distanceKm([coords.lat, coords.lng], [a.lat, a.lng]).toFixed(1)} km away`
                   : a.area || "location not shared";
+              const responders = a.responders || [];
+              const responded = responders.length > 0;
+              const iResponded = responders.some((r) => r.email === user?.email?.toLowerCase());
               return (
-                <li key={a.id || a.createdAt} className="glass flex items-center justify-between gap-3 rounded-2xl border border-emergency/30 p-4">
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold">
-                      <span className="text-emergency">🚨 {a.victim}</span> — {a.reason}
-                    </p>
-                    <p className="text-xs text-muted">{where} · {timeAgo(a.createdAt)}</p>
+                <li
+                  key={a.id || a.createdAt}
+                  className={`glass flex flex-col gap-2 rounded-2xl border p-4 transition-colors ${responded ? "border-success/60 bg-success/10" : "border-emergency/30"}`}
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold">
+                        <span className={responded ? "text-success" : "text-emergency"}>
+                          {responded ? "✅" : "🚨"} {a.victim}
+                        </span>{" "}
+                        — {a.reason}
+                      </p>
+                      <p className="text-xs text-muted">{where} · {timeAgo(a.createdAt)}</p>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-2">
+                      {a.id && !iResponded && (
+                        <button
+                          type="button"
+                          onClick={() => respond(a.id)}
+                          className="rounded-lg bg-success px-3 py-1.5 text-xs font-semibold text-white"
+                        >
+                          Respond
+                        </button>
+                      )}
+                      {typeof a.lat === "number" && (
+                        <a
+                          href={`https://www.openstreetmap.org/?mlat=${a.lat}&mlon=${a.lng}#map=15/${a.lat}/${a.lng}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="rounded-lg bg-emergency px-3 py-1.5 text-xs font-semibold text-white"
+                        >
+                          Locate
+                        </a>
+                      )}
+                    </div>
                   </div>
-                  {typeof a.lat === "number" && (
-                    <a
-                      href={`https://www.openstreetmap.org/?mlat=${a.lat}&mlon=${a.lng}#map=15/${a.lat}/${a.lng}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="shrink-0 rounded-lg bg-emergency px-3 py-1.5 text-xs font-semibold text-white"
-                    >
-                      Locate
-                    </a>
+                  {responded && (
+                    <p className="text-xs font-medium text-success">
+                      🟢 {responders.length} responding — {responders.map((r) => r.email).join(", ")}
+                    </p>
                   )}
                 </li>
               );

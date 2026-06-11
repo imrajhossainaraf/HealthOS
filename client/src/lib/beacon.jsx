@@ -14,6 +14,15 @@ import { KEYS, useLocalState } from "@/lib/storage";
 import { DEFAULT_CENTER, distanceKm } from "@/lib/geo";
 import { useLocation } from "@/lib/location";
 import { useToast } from "@/lib/toast";
+import { useAuth } from "@/lib/auth";
+
+// Merge a responder into an alert's responders list (dedup by email).
+function withResponder(alert, responder) {
+  if (!alert || !responder?.email) return alert;
+  const existing = Array.isArray(alert.responders) ? alert.responders : [];
+  if (existing.some((r) => r.email === responder.email)) return alert;
+  return { ...alert, responders: [...existing, responder] };
+}
 
 const BeaconContext = createContext(null);
 
@@ -26,6 +35,7 @@ const BeaconContext = createContext(null);
 export function BeaconProvider({ children }) {
   const { push } = useToast();
   const { coords } = useLocation();
+  const { user } = useAuth();
   const socketRef = useRef(null);
   const coordsRef = useRef(coords);
   const activeAlertRef = useRef(null); // id of the SOS this client is broadcasting
@@ -77,6 +87,14 @@ export function BeaconProvider({ children }) {
         href: "/emergency#live-map",
         actionLabel: "Respond",
       });
+    });
+    // Someone tapped "Respond" — reflect it on every client instantly.
+    socket.on("sos:responded", ({ id, responder } = {}) => {
+      if (!id || !responder) return;
+      setRecentAlerts((list) =>
+        list.map((a) => (a.id === id ? withResponder(a, responder) : a))
+      );
+      setIncomingAlert((cur) => (cur && cur.id === id ? withResponder(cur, responder) : cur));
     });
     // A victim cancelled their SOS — purge it from everyone's UI immediately.
     socket.on("sos:cancel", ({ id } = {}) => {
@@ -138,10 +156,29 @@ export function BeaconProvider({ children }) {
 
   const clearAlert = useCallback(() => setIncomingAlert(null), []);
 
+  // Tap "Respond" on an SOS card. Optimistically mark it locally for instant
+  // feedback, then tell the server which broadcasts to everyone else.
+  const respond = useCallback(
+    (id) => {
+      if (!id) return;
+      const socket = socketRef.current;
+      const me = user?.email
+        ? { email: user.email.toLowerCase(), name: user.name || "A responder", at: new Date().toISOString() }
+        : null;
+      if (me) {
+        setRecentAlerts((list) => list.map((a) => (a.id === id ? withResponder(a, me) : a)));
+        setIncomingAlert((cur) => (cur && cur.id === id ? withResponder(cur, me) : cur));
+      }
+      if (socket && socket.connected) socket.emit("sos:respond", { id });
+    },
+    [user]
+  );
+
   const value = {
     connected,
     activate,
     cancel,
+    respond,
     incomingAlert,
     clearAlert,
     recentAlerts,

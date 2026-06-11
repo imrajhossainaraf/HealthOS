@@ -14,6 +14,9 @@ export function alertToClient(row) {
     lat: row.lat ?? null,
     lng: row.lng ?? null,
     createdAt: created,
+    responders: Array.isArray(row.responders)
+      ? row.responders.map((r) => ({ email: r.email, name: r.name || "", at: r.at }))
+      : [],
   };
 }
 

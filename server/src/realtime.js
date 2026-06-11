@@ -273,6 +273,29 @@ export function initRealtime(httpServer) {
       io.emit("sos:cancel", { id });
     });
 
+    // A network member taps "Respond" on an SOS card. Record them on the alert
+    // and broadcast to EVERYONE so every client turns that card green and shows
+    // the responder instantly. Requires an authenticated identity (for the email).
+    socket.on("sos:respond", async ({ id } = {}) => {
+      const oid = toObjectId(id);
+      if (!oid) return;
+      const email = (user?.email || "").toLowerCase();
+      const name = user?.name || "A responder";
+      if (!email) return; // need an identity to show on the card
+      const responder = { email, name, at: new Date() };
+      try {
+        // Push only if this responder isn't already recorded (idempotent).
+        await collections.alerts().updateOne(
+          { _id: oid, "responders.email": { $ne: email } },
+          { $push: { responders: responder } }
+        );
+      } catch (err) {
+        console.error("[alerts] respond failed:", err?.message || err);
+        return;
+      }
+      io.emit("sos:responded", { id, responder });
+    });
+
     socket.on("disconnect", () => volunteers.delete(socket.id));
   });
 
