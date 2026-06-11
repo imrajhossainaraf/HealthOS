@@ -96,6 +96,14 @@ export function BeaconProvider({ children }) {
       );
       setIncomingAlert((cur) => (cur && cur.id === id ? withResponder(cur, responder) : cur));
     });
+    // Direct notice to the SOS victim that a volunteer is on the way.
+    socket.on("sos:responder-incoming", ({ responder } = {}) => {
+      push({
+        variant: "success",
+        title: "🚑 Help is on the way",
+        body: `${responder?.name || "A volunteer"} is responding to your SOS and is incoming.`,
+      });
+    });
     // A victim cancelled their SOS — purge it from everyone's UI immediately.
     socket.on("sos:cancel", ({ id } = {}) => {
       if (!id) return;

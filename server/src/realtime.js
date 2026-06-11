@@ -190,6 +190,11 @@ export function initRealtime(httpServer) {
   io.on("connection", async (socket) => {
     const user = await authenticateSocket(socket.handshake.auth?.token);
 
+    // Join a personal room so we can push direct notices to this user (e.g. tell
+    // an SOS victim that a volunteer is responding) regardless of which page
+    // they're on or how many tabs they have open.
+    if (user?.id) socket.join(`user:${user.id}`);
+
     // Volunteer toggles availability and shares coarse location.
     socket.on("volunteer:online", ({ lat, lng } = {}) => {
       if (typeof lat === "number" && typeof lng === "number") {
@@ -283,17 +288,35 @@ export function initRealtime(httpServer) {
       const name = user?.name || "A responder";
       if (!email) return; // need an identity to show on the card
       const responder = { email, name, at: new Date() };
+      let isNew = false;
       try {
         // Push only if this responder isn't already recorded (idempotent).
-        await collections.alerts().updateOne(
+        const result = await collections.alerts().updateOne(
           { _id: oid, "responders.email": { $ne: email } },
           { $push: { responders: responder } }
         );
+        isNew = result.modifiedCount > 0;
       } catch (err) {
         console.error("[alerts] respond failed:", err?.message || err);
         return;
       }
+      // Update every client's card (green + responder list).
       io.emit("sos:responded", { id, responder });
+
+      // Tell the SOS victim directly that a volunteer is on the way — only the
+      // first time this person responds, so they aren't re-toasted on re-clicks.
+      if (isNew) {
+        try {
+          const alert = await collections
+            .alerts()
+            .findOne({ _id: oid }, { projection: { userId: 1, victim: 1 } });
+          if (alert?.userId) {
+            io.to(`user:${alert.userId}`).emit("sos:responder-incoming", { id, responder });
+          }
+        } catch (err) {
+          console.error("[alerts] responder-incoming notify failed:", err?.message || err);
+        }
+      }
     });
 
     socket.on("disconnect", () => volunteers.delete(socket.id));
