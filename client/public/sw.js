@@ -14,10 +14,18 @@ self.addEventListener("push", (event) => {
     tag: "healthos-alert",
     renotify: true,
     requireInteraction: true,
-    vibrate: [200, 100, 200, 100, 200],
+    silent: false,
+    vibrate: [300, 120, 300, 120, 300, 120, 300],
     data: { url: data.url || "/" },
   };
-  event.waitUntil(self.registration.showNotification(title, options));
+  event.waitUntil(
+    (async () => {
+      await self.registration.showNotification(title, options);
+      // If any tab is open (even backgrounded), ask it to sound the loud siren.
+      const clients = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+      for (const client of clients) client.postMessage({ type: "healthos:push-siren", data });
+    })()
+  );
 });
 
 self.addEventListener("notificationclick", (event) => {

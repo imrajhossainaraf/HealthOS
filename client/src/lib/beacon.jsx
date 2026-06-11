@@ -63,7 +63,18 @@ export function BeaconProvider({ children }) {
     if (user) registerPush(); // already-granted case
     const onReady = () => registerPush();
     window.addEventListener("healthos:push-ready", onReady);
-    return () => window.removeEventListener("healthos:push-ready", onReady);
+
+    // When a push arrives and a tab is open (even backgrounded), the service
+    // worker asks us to sound the loud siren.
+    const onSwMessage = (e) => {
+      if (e?.data?.type === "healthos:push-siren") playSiren();
+    };
+    navigator.serviceWorker?.addEventListener?.("message", onSwMessage);
+
+    return () => {
+      window.removeEventListener("healthos:push-ready", onReady);
+      navigator.serviceWorker?.removeEventListener?.("message", onSwMessage);
+    };
   }, [user]);
 
   // Format an incoming alert into a human distance/where string.
