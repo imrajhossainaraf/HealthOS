@@ -176,6 +176,61 @@ export async function sendOtpEmail(to, code) {
   });
 }
 
+/** Prescription / medicine schedule, emailed to the patient. */
+export async function sendPrescriptionEmail(to, prescription = {}, { patientName = "" } = {}) {
+  const meds = Array.isArray(prescription.medicines) ? prescription.medicines : [];
+  const head = `
+    <tr>
+      <th align="left" style="padding:8px 0;border-bottom:2px solid #e2e8f0;font-size:11px;text-transform:uppercase;letter-spacing:0.04em;color:#94a3b8;">Medicine</th>
+      <th align="left" style="padding:8px 0;border-bottom:2px solid #e2e8f0;font-size:11px;text-transform:uppercase;letter-spacing:0.04em;color:#94a3b8;">Dose</th>
+      <th align="left" style="padding:8px 0;border-bottom:2px solid #e2e8f0;font-size:11px;text-transform:uppercase;letter-spacing:0.04em;color:#94a3b8;">When</th>
+      <th align="left" style="padding:8px 0;border-bottom:2px solid #e2e8f0;font-size:11px;text-transform:uppercase;letter-spacing:0.04em;color:#94a3b8;">Time</th>
+    </tr>`;
+  const rows = meds
+    .map(
+      (m) => `
+    <tr>
+      <td style="padding:9px 0;border-bottom:1px solid #f1f5f9;font-size:14px;font-weight:600;color:#0f172a;">${esc(m.name)}</td>
+      <td style="padding:9px 0;border-bottom:1px solid #f1f5f9;font-size:13px;color:#475569;">${esc(m.dose || "—")}</td>
+      <td style="padding:9px 0;border-bottom:1px solid #f1f5f9;font-size:13px;color:#475569;">${esc([m.when, m.meal].filter(Boolean).join(" · ") || "—")}</td>
+      <td style="padding:9px 0;border-bottom:1px solid #f1f5f9;font-size:13px;font-weight:600;color:#0d9488;">${esc(m.time || "—")}</td>
+    </tr>`
+    )
+    .join("");
+
+  const body = `
+    <div style="display:inline-block;background:#ccfbf1;color:#0d9488;font-size:12px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;padding:6px 12px;border-radius:999px;margin:0 0 14px;">℞ Prescription</div>
+    <h1 style="margin:0 0 6px;font-size:21px;font-weight:700;line-height:1.3;">${esc(prescription.title || "Your prescription")}</h1>
+    <p style="margin:0 0 20px;font-size:14px;line-height:1.6;color:#475569;">
+      ${patientName ? `For <strong>${esc(patientName)}</strong>. ` : ""}${prescription.date ? `Dated ${esc(prescription.date)}.` : ""}
+    </p>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 18px;">
+      ${head}
+      ${rows || `<tr><td colspan="4" style="padding:12px 0;font-size:13px;color:#94a3b8;">No medicines listed.</td></tr>`}
+    </table>
+    ${
+      prescription.notes
+        ? `<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:12px 14px;margin:0 0 16px;">
+            <p style="margin:0;font-size:13px;line-height:1.6;color:#475569;"><strong>Notes:</strong> ${esc(prescription.notes)}</p>
+          </div>`
+        : ""
+    }
+    <p style="margin:0;font-size:12px;line-height:1.6;color:#94a3b8;">
+      Follow your doctor's guidance. This is a self-recorded schedule shared via HealthOS.
+    </p>`;
+
+  const textMeds = meds
+    .map((m) => `- ${m.name}${m.dose ? ` (${m.dose})` : ""}${[m.when, m.meal].filter(Boolean).length ? ` — ${[m.when, m.meal].filter(Boolean).join(", ")}` : ""}${m.time ? ` at ${m.time}` : ""}`)
+    .join("\n");
+
+  return sendMail({
+    to,
+    subject: `Your HealthOS prescription${prescription.title ? ` — ${prescription.title}` : ""}`,
+    text: `${prescription.title || "Your prescription"}${prescription.date ? ` (${prescription.date})` : ""}\n\n${textMeds || "No medicines listed."}${prescription.notes ? `\n\nNotes: ${prescription.notes}` : ""}`,
+    html: renderEmailLayout({ accent: "#0d9488", preheader: "Your prescription schedule", body }),
+  });
+}
+
 /** Emergency SOS notification to a contact / guardian / nearby responder. */
 export async function sendSosEmail(to, alert, { relationship = "contact" } = {}) {
   const where =

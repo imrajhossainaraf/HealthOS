@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
-  HeartPulse, Siren, User, Leaf, Activity, Dumbbell, Brain, BookOpen, History,
+  HeartPulse, Siren, User, Leaf, Activity, Dumbbell, Brain, BookOpen, History, FileText,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 
@@ -22,6 +22,7 @@ const PRIMARY = [
 
 // Everything else, tucked into the "More" dropdown.
 const MORE = [
+  { href: "/docs", label: "Docs", Icon: FileText },
   { href: "/herbal", label: "Herbal", Icon: Leaf },
   { href: "/disease-watch", label: "Disease Watch", Icon: Activity },
   { href: "/fitness", label: "Fitness", Icon: Dumbbell },

@@ -77,6 +77,29 @@ export const aiChatSchema = z.object({
   profile: z.record(z.string(), z.any()).optional(),
 });
 
+// Emailing a prescription schedule to the user (or a chosen recipient).
+export const prescriptionEmailSchema = z.object({
+  to: z.string().email().max(254).optional(),
+  prescription: z.object({
+    title: z.string().trim().max(120).optional().default(""),
+    date: z.string().trim().max(40).optional().default(""),
+    notes: z.string().trim().max(2000).optional().default(""),
+    medicines: z
+      .array(
+        z.object({
+          name: z.string().trim().min(1).max(120),
+          dose: z.string().trim().max(80).optional().default(""),
+          when: z.string().trim().max(80).optional().default(""),
+          meal: z.string().trim().max(40).optional().default(""),
+          time: z.string().trim().max(20).optional().default(""),
+        })
+      )
+      .max(50)
+      .optional()
+      .default([]),
+  }),
+});
+
 // Community symptom / outbreak report (anonymous, shared).
 export const outbreakSchema = z.object({
   symptom: z.string().trim().min(1).max(60),

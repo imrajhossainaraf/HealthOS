@@ -129,6 +129,12 @@ export const alertApi = {
     apiFetch(`/api/alert/${encodeURIComponent(number)}`, { method: "POST", auth: false }),
 };
 
+// Prescriptions — records sync via the store; this only emails a schedule.
+export const prescriptionApi = {
+  email: (prescription, to) =>
+    apiFetch("/api/prescriptions/email", { method: "POST", body: { prescription, to } }),
+};
+
 // AI Health Copilot (OpenRouter-backed). `chat` requires auth.
 export const aiApi = {
   status: () => apiFetch("/api/ai/status", { auth: false }),

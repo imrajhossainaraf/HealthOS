@@ -13,6 +13,8 @@ export const KEYS = {
   community: "healthos:community",
   herbalSubmissions: "healthos:herbalSubmissions",
   outbreakReports: "healthos:outbreakReports",
+  prescriptions: "healthos:prescriptions",
+  medHistory: "healthos:medHistory",
   lastCoords: "healthos:lastCoords",
 };
 
