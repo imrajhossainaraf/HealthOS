@@ -408,13 +408,13 @@ export default function DashboardPage() {
 /* ---------------- Sub-components ---------------- */
 
 function AlertsGraph({ history = [] }) {
-  const days = 7;
+  const days = 14;
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const buckets = Array.from({ length: days }, (_, i) => {
     const d = new Date(today);
     d.setDate(d.getDate() - (days - 1 - i));
-    return { label: d.toLocaleDateString(undefined, { weekday: "short" }), time: d.getTime(), count: 0 };
+    return { label: d.toLocaleDateString(undefined, { day: "numeric", month: "short" }), time: d.getTime(), count: 0 };
   });
   for (const e of history) {
     const t = new Date(e.timestamp);
@@ -426,36 +426,78 @@ function AlertsGraph({ history = [] }) {
   const total = buckets.reduce((s, b) => s + b.count, 0);
   const max = Math.max(1, ...buckets.map((b) => b.count));
 
+  // Map counts to an SVG coordinate space (viewBox 0..100 × 0..40).
+  const W = 100, H = 40, padT = 4, padB = 4;
+  const pts = buckets.map((b, i) => ({
+    x: (i / (buckets.length - 1)) * W,
+    y: H - padB - (b.count / max) * (H - padT - padB),
+  }));
+  const line = smoothPath(pts);
+  const area = `${line} L ${W} ${H} L 0 ${H} Z`;
+  const gridY = [padT, (padT + (H - padB)) / 2, H - padB];
+
   return (
     <section className="glass rounded-2xl p-6">
       <div className="mb-4 flex items-center justify-between">
         <h2 className="font-display text-lg font-semibold">🚨 Emergency Alerts</h2>
-        <span className="text-xs text-muted">last 7 days · {total} total</span>
+        <span className="text-xs text-muted">last 14 days · {total} total</span>
       </div>
-      <div className="flex h-32 items-end gap-2">
-        {buckets.map((b, i) => (
-          <div key={i} className="flex h-full flex-1 flex-col items-center justify-end">
-            {b.count > 0 && (
-              <span className="mb-1 text-[11px] font-semibold text-emergency">{b.count}</span>
-            )}
-            <div
-              className="w-full rounded-t bg-emergency transition-all"
-              style={{ height: `${(b.count / max) * 100}%`, minHeight: "3px", opacity: b.count ? 1 : 0.2 }}
-              title={`${b.label}: ${b.count} alert${b.count === 1 ? "" : "s"}`}
-            />
-          </div>
-        ))}
+
+      <div className="flex gap-2">
+        {/* y-axis labels */}
+        <div className="flex h-36 flex-col justify-between py-1 text-[10px] text-muted">
+          <span>{max}</span>
+          <span>{Math.round(max / 2)}</span>
+          <span>0</span>
+        </div>
+        {/* chart */}
+        <div className="relative flex-1">
+          <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="h-36 w-full overflow-visible">
+            <defs>
+              <linearGradient id="alertArea" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#e11d48" stopOpacity="0.35" />
+                <stop offset="100%" stopColor="#e11d48" stopOpacity="0" />
+              </linearGradient>
+            </defs>
+            {gridY.map((y, i) => (
+              <line key={i} x1="0" y1={y} x2={W} y2={y} stroke="#e2e8f0" strokeWidth="0.5" vectorEffect="non-scaling-stroke" />
+            ))}
+            <path d={area} fill="url(#alertArea)" />
+            <path d={line} fill="none" stroke="#e11d48" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+          </svg>
+        </div>
       </div>
-      <div className="mt-1 flex gap-2">
-        {buckets.map((b, i) => (
-          <span key={i} className="flex-1 text-center text-[10px] text-muted">{b.label}</span>
-        ))}
+
+      {/* x-axis labels (endpoints + middle, to avoid crowding) */}
+      <div className="ml-7 mt-1 flex justify-between text-[10px] text-muted">
+        <span>{buckets[0].label}</span>
+        <span>{buckets[Math.floor(buckets.length / 2)].label}</span>
+        <span>Today</span>
       </div>
+
       {total === 0 && (
-        <p className="mt-2 text-xs text-muted">No emergency alerts this week — stay safe.</p>
+        <p className="mt-2 text-xs text-muted">No emergency alerts in the last 14 days — stay safe.</p>
       )}
     </section>
   );
+}
+
+/** Smooth (Catmull-Rom → cubic Bézier) path through points for a flowing line. */
+function smoothPath(pts) {
+  if (pts.length < 2) return pts.length ? `M ${pts[0].x} ${pts[0].y}` : "";
+  const d = [`M ${pts[0].x} ${pts[0].y}`];
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = pts[i - 1] || pts[i];
+    const p1 = pts[i];
+    const p2 = pts[i + 1];
+    const p3 = pts[i + 2] || p2;
+    const cp1x = p1.x + (p2.x - p0.x) / 6;
+    const cp1y = p1.y + (p2.y - p0.y) / 6;
+    const cp2x = p2.x - (p3.x - p1.x) / 6;
+    const cp2y = p2.y - (p3.y - p1.y) / 6;
+    d.push(`C ${cp1x} ${cp1y} ${cp2x} ${cp2y} ${p2.x} ${p2.y}`);
+  }
+  return d.join(" ");
 }
 
 function StatCard({ icon, value, label, tint, delay = 0 }) {
