@@ -68,7 +68,11 @@ async function fetchPlacesHospitals(origin, { radius = 7000, limit = 8 } = {}) {
         locationRestriction: { circle: { center: { latitude: lat, longitude: lng }, radius } },
       }),
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      const detail = await res.text().catch(() => "");
+      console.warn(`[hospitals] Google Places failed (${res.status}): ${detail.slice(0, 300)}`);
+      return null;
+    }
     const data = await res.json();
     const hospitals = (data.places || []).map((p, i) => ({
       id: `g-${i}-${p.location?.latitude}`,
@@ -79,7 +83,8 @@ async function fetchPlacesHospitals(origin, { radius = 7000, limit = 8 } = {}) {
       address: p.formattedAddress || "",
     }));
     return hospitals.filter((h) => typeof h.lat === "number");
-  } catch {
+  } catch (err) {
+    console.warn("[hospitals] Google Places error:", err?.message || err);
     return null;
   }
 }
@@ -118,7 +123,8 @@ export async function fetchNearbyHospitals(origin = DEFAULT_CENTER, { radius = 7
       });
     if (hospitals.length === 0) throw new Error("empty");
     return { source: "osm", hospitals: decorate(hospitals, origin).slice(0, limit) };
-  } catch {
+  } catch (err) {
+    console.warn("[hospitals] OSM Overpass failed, using curated list:", err?.message || err);
     // 3) Curated real Dhaka hospitals.
     return { source: "curated", hospitals: decorate(CURATED, origin).slice(0, limit) };
   }
