@@ -129,6 +129,12 @@ export const alertApi = {
     apiFetch(`/api/alert/${encodeURIComponent(number)}`, { method: "POST", auth: false }),
 };
 
+// Web Push subscription.
+export const pushApi = {
+  key: () => apiFetch("/api/push/key", { auth: false }),
+  subscribe: (subscription) => apiFetch("/api/push/subscribe", { method: "POST", body: { subscription } }),
+};
+
 // Prescriptions — records sync via the store; this only emails a schedule.
 export const prescriptionApi = {
   email: (prescription, to) =>

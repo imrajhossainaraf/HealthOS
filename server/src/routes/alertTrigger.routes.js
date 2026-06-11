@@ -7,6 +7,7 @@ import { Router } from "express";
 import { collections } from "../db.js";
 import { sendSosEmail } from "../email.js";
 import { emitToUser } from "../realtime.js";
+import { sendPushToUsers } from "../push.js";
 
 export const alertTriggerRouter = Router();
 
@@ -86,12 +87,12 @@ alertTriggerRouter.post("/:number", async (req, res, next) => {
       if (phones.includes(normPhone(u.phone))) matchedIds.add(u._id.toString());
     }
     matchedIds.delete(userId); // don't toast the owner via their own contact list
+    const toastBody = `${ownerName} may need help — an emergency alert was triggered for them.`;
     for (const id of matchedIds) {
-      emitToUser(id, "alert:incoming", {
-        title: "🚨 Emergency alert",
-        body: `${ownerName} may need help — an emergency alert was triggered for them.`,
-      });
+      emitToUser(id, "alert:incoming", { title: "🚨 Emergency alert", body: toastBody });
     }
+    // Web Push so contacts are alerted even with the site closed.
+    sendPushToUsers([...matchedIds], { title: "🚨 Emergency alert", body: toastBody, url: "/emergency" }).catch(() => {});
 
     res.json({ ok: true, name: ownerName, notified: emails.size, toasted: matchedIds.size });
   } catch (err) {

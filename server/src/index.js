@@ -18,6 +18,7 @@ import { alertTriggerRouter } from "./routes/alertTrigger.routes.js";
 import { reputationRouter } from "./routes/reputation.routes.js";
 import { aiRouter } from "./routes/ai.routes.js";
 import { prescriptionsRouter } from "./routes/prescriptions.routes.js";
+import { pushRouter } from "./routes/push.routes.js";
 import { initRealtime } from "./realtime.js";
 
 const app = express();
@@ -66,6 +67,7 @@ app.use("/api/alert", alertTriggerRouter); // alert-link trigger (POST /:number)
 app.use("/api/reputation", reputationRouter);
 app.use("/api/ai", aiRouter);
 app.use("/api/prescriptions", prescriptionsRouter);
+app.use("/api/push", pushRouter);
 
 // 404 for unknown API routes.
 app.use("/api", (req, res) => res.status(404).json({ error: "Not found" }));

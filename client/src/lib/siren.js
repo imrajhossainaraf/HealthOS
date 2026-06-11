@@ -24,11 +24,18 @@ function getCtx() {
  */
 export function initAlertSound() {
   if (typeof window === "undefined" || unlocked) return;
+  const signalGranted = () => window.dispatchEvent(new Event("healthos:push-ready"));
   const unlock = () => {
     const c = getCtx();
     if (c && c.state === "suspended") c.resume().catch(() => {});
-    if ("Notification" in window && Notification.permission === "default") {
-      Notification.requestPermission().catch(() => {});
+    if ("Notification" in window) {
+      if (Notification.permission === "granted") {
+        signalGranted();
+      } else if (Notification.permission === "default") {
+        Notification.requestPermission()
+          .then((p) => p === "granted" && signalGranted())
+          .catch(() => {});
+      }
     }
     unlocked = true;
     window.removeEventListener("pointerdown", unlock);

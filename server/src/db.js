@@ -35,6 +35,9 @@ export async function connectDb() {
     // One reputation tally per user; leaderboard sorts by points descending.
     database.collection("reputation").createIndex({ userId: 1 }, { unique: true }),
     database.collection("reputation").createIndex({ points: -1 }),
+    // Web Push subscriptions — one per browser endpoint, looked up by user.
+    database.collection("pushSubscriptions").createIndex({ endpoint: 1 }, { unique: true }),
+    database.collection("pushSubscriptions").createIndex({ userId: 1 }),
   ]);
 
   // Self-heal: legacy accounts saved phone:"" which collides on the unique
@@ -63,6 +66,7 @@ export const collections = {
   alerts: () => database.collection("alerts"),
   otps: () => database.collection("otps"),
   reputation: () => database.collection("reputation"),
+  pushSubs: () => database.collection("pushSubscriptions"),
 };
 
 /** Shape a user document for API responses (never leak the password hash). */

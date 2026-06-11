@@ -54,6 +54,16 @@ export const config = {
   },
   // Where to bounce the browser back to after OAuth (first allowed origin).
   clientAppUrl: (process.env.CLIENT_ORIGIN || "http://localhost:3000").split(",")[0].trim(),
+  // Web Push (VAPID) — free browser push so alerts reach users with the site
+  // closed. Disabled until keys are set.
+  push: {
+    publicKey: process.env.VAPID_PUBLIC_KEY || "",
+    privateKey: process.env.VAPID_PRIVATE_KEY || "",
+    subject: process.env.VAPID_SUBJECT || "mailto:roboticsshopctg@gmail.com",
+    get enabled() {
+      return Boolean(this.publicKey && this.privateKey);
+    },
+  },
   // OpenRouter AI (powers the Health Copilot chatbot). Disabled until a key is set.
   ai: {
     apiKey: process.env.OPENROUTER_API_KEY || "",

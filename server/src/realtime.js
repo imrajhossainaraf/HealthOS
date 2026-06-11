@@ -3,6 +3,7 @@ import { authenticateSocket } from "./auth.js";
 import { collections, toObjectId } from "./db.js";
 import { alertToClient } from "./routes/alerts.routes.js";
 import { sendSosEmail } from "./email.js";
+import { sendPushToUser, sendPushToUsers } from "./push.js";
 import { config } from "./config.js";
 
 // In-memory presence of opted-in volunteers: socketId -> { user, email, lat, lng }.
@@ -189,6 +190,26 @@ async function notifyByEmail(userId, payload, volunteerEmails = [], radiusKm = 5
     )
   );
   if (recipients.size) console.log(`[sos email] notified ${recipients.size} recipient(s) for ${payload.victim}`);
+
+  // Web Push to any recipients who are HealthOS users — reaches them even with
+  // the app closed.
+  if (recipients.size) {
+    try {
+      const matched = await collections
+        .users()
+        .find({ email: { $in: [...recipients.keys()] } })
+        .project({ _id: 1 })
+        .toArray();
+      const ids = matched.map((u) => u._id.toString()).filter((id) => id !== userId);
+      sendPushToUsers(ids, {
+        title: "🚨 Emergency SOS nearby",
+        body: `${payload.victim} needs help${payload.area ? ` · ${payload.area}` : ""}.`,
+        url: "/emergency",
+      }).catch(() => {});
+    } catch (err) {
+      console.error("[push] sos notify failed:", err?.message || err);
+    }
+  }
 }
 
 export function initRealtime(httpServer) {
@@ -322,6 +343,11 @@ export function initRealtime(httpServer) {
             .findOne({ _id: oid }, { projection: { userId: 1, victim: 1 } });
           if (alert?.userId) {
             io.to(`user:${alert.userId}`).emit("sos:responder-incoming", { id, responder });
+            sendPushToUser(alert.userId, {
+              title: "🚑 Help is on the way",
+              body: `${name} is responding to your SOS and is incoming.`,
+              url: "/emergency",
+            }).catch(() => {});
           }
         } catch (err) {
           console.error("[alerts] responder-incoming notify failed:", err?.message || err);

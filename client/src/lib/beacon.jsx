@@ -16,6 +16,7 @@ import { useLocation } from "@/lib/location";
 import { useToast } from "@/lib/toast";
 import { useAuth } from "@/lib/auth";
 import { initAlertSound, playSiren, showAlertNotification } from "@/lib/siren";
+import { registerPush } from "@/lib/push";
 
 // Merge a responder into an alert's responders list (dedup by email).
 function withResponder(alert, responder) {
@@ -55,10 +56,15 @@ export function BeaconProvider({ children }) {
     optedInRef.current = optedIn;
   }, [optedIn]);
 
-  // Prime the siren/notification permissions on the first user gesture.
+  // Prime the siren/notification permissions on the first user gesture, then
+  // subscribe to Web Push so alerts arrive even with the site closed.
   useEffect(() => {
     initAlertSound();
-  }, []);
+    if (user) registerPush(); // already-granted case
+    const onReady = () => registerPush();
+    window.addEventListener("healthos:push-ready", onReady);
+    return () => window.removeEventListener("healthos:push-ready", onReady);
+  }, [user]);
 
   // Format an incoming alert into a human distance/where string.
   const describe = useCallback((alert) => {
