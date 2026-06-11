@@ -13,12 +13,26 @@ const RELATION_ICON = {
   Other: "🧑",
 };
 
-export default function FamilyMemberCard({ member, onSelect, onRemove }) {
+export default function FamilyMemberCard({ member, onSelect, onRemove, selected }) {
   const risk = member.risk || "Low";
   return (
-    <div className="glass glass-hover rounded-2xl p-4">
+    // The whole card is clickable to open the member's health card.
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={onSelect}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onSelect?.();
+        }
+      }}
+      className={`glass glass-hover cursor-pointer rounded-2xl p-4 transition-colors ${
+        selected ? "border-primary/60 ring-1 ring-primary/40" : ""
+      }`}
+    >
       <div className="flex items-start justify-between gap-2">
-        <button type="button" onClick={onSelect} className="flex items-center gap-3 text-left">
+        <div className="flex items-center gap-3 text-left">
           <span className="text-2xl">{RELATION_ICON[member.relation] || "🧑"}</span>
           <div>
             <p className="font-display font-semibold">{member.name}</p>
@@ -27,8 +41,15 @@ export default function FamilyMemberCard({ member, onSelect, onRemove }) {
               {member.bloodGroup ? ` · ${member.bloodGroup}` : ""}
             </p>
           </div>
+        </div>
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onRemove?.(); }}
+          className="text-muted hover:text-emergency"
+          aria-label="Remove member"
+        >
+          ✕
         </button>
-        <button type="button" onClick={onRemove} className="text-muted hover:text-emergency" aria-label="Remove member">✕</button>
       </div>
 
       <div className="mt-3 flex flex-wrap items-center gap-2">

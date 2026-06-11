@@ -14,12 +14,20 @@ export default function HealthCard({ profile = {}, contacts = [], userId = null 
     bloodGroup,
     dob,
     gender,
+    phone,
+    address,
+    nid,
+    guardianName,
+    guardianPhone,
+    guardianNid,
     allergies = [],
     conditions = [],
     medications = [],
   } = profile;
 
   const age = dob ? calcAge(dob) : null;
+  const dobText = dob ? new Date(dob).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : null;
+  const hasGuardian = guardianName || guardianPhone || guardianNid;
 
   // Resolve the site origin on the client (avoids SSR mismatch / impure render).
   const [origin, setOrigin] = useState("");
@@ -85,9 +93,31 @@ export default function HealthCard({ profile = {}, contacts = [], userId = null 
           </div>
         </div>
 
+        {/* Identity & contact details */}
+        {(dobText || phone || address || nid) && (
+          <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 border-t border-border pt-3">
+            {dobText && <InfoCell label="Date of birth" value={dobText} />}
+            {phone && <InfoCell label="Phone" value={phone} />}
+            {nid && <InfoCell label="National ID" value={nid} />}
+            {address && <InfoCell label="Address" value={address} full />}
+          </div>
+        )}
+
         <CardRow label="Allergies" items={allergies} empty="None recorded" danger />
         <CardRow label="Conditions" items={conditions} empty="None recorded" />
         <CardRow label="Medications" items={medications} empty="None recorded" />
+
+        {/* Parent / Guardian */}
+        {hasGuardian && (
+          <div className="mt-3 border-t border-border pt-3">
+            <p className="text-xs uppercase tracking-wide text-muted">Parent / Guardian</p>
+            <div className="mt-1 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+              <span className="font-medium">{guardianName || "Guardian"}</span>
+              {guardianPhone && <span className="text-primary">{guardianPhone}</span>}
+            </div>
+            {guardianNid && <p className="text-xs text-muted">NID: {guardianNid}</p>}
+          </div>
+        )}
 
         <div className="mt-3 border-t border-border pt-3">
           <p className="text-xs uppercase tracking-wide text-muted">
@@ -125,6 +155,15 @@ export default function HealthCard({ profile = {}, contacts = [], userId = null 
       >
         🖨️ Print Health Card
       </button>
+    </div>
+  );
+}
+
+function InfoCell({ label, value, full }) {
+  return (
+    <div className={full ? "col-span-2" : ""}>
+      <p className="text-xs uppercase tracking-wide text-muted">{label}</p>
+      <p className="mt-0.5 font-medium wrap-break-word">{value}</p>
     </div>
   );
 }

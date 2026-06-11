@@ -10,7 +10,10 @@ const EMPTY_PROFILE = {
   dob: "",
   gender: "",
   bloodGroup: "",
+  phone: "",
+  address: "",
   area: "",
+  nid: "",
   heightCm: "",
   weightKg: "",
   allergies: [],
@@ -21,6 +24,7 @@ const EMPTY_PROFILE = {
   guardianName: "",
   guardianEmail: "",
   guardianPhone: "",
+  guardianNid: "",
   familyHistory: "",
   goals: "",
 };
@@ -81,8 +85,17 @@ export default function ProfilePage() {
                   ))}
                 </select>
               </Field>
+              <Field label="Phone number">
+                <input className={inputCls} inputMode="tel" value={profile.phone} onChange={set("phone")} placeholder="+880 1XXX-XXXXXX" autoComplete="off" />
+              </Field>
+              <Field label="National ID (NID)">
+                <input className={inputCls} inputMode="numeric" value={profile.nid} onChange={set("nid")} placeholder="e.g. 1990123456789" autoComplete="off" />
+              </Field>
               <Field label="Area / City">
                 <input className={inputCls} value={profile.area} onChange={set("area")} placeholder="e.g. Dhanmondi, Dhaka" />
+              </Field>
+              <Field label="Full address">
+                <input className={inputCls} value={profile.address} onChange={set("address")} placeholder="House, road, area, city" />
               </Field>
             </div>
           </Section>
@@ -92,7 +105,7 @@ export default function ProfilePage() {
             <p className="-mt-2 mb-3 text-xs text-muted">
               Automatically emailed when you trigger an emergency SOS.
             </p>
-            <div className="grid gap-4 sm:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Name">
                 <input className={inputCls} value={profile.guardianName} onChange={set("guardianName")} placeholder="e.g. Rahim Uddin" autoComplete="off" />
               </Field>
@@ -101,6 +114,9 @@ export default function ProfilePage() {
               </Field>
               <Field label="Phone">
                 <input className={inputCls} inputMode="tel" value={profile.guardianPhone} onChange={set("guardianPhone")} placeholder="+880 1XXX-XXXXXX" autoComplete="off" />
+              </Field>
+              <Field label="Parent's National ID (NID)">
+                <input className={inputCls} inputMode="numeric" value={profile.guardianNid} onChange={set("guardianNid")} placeholder="e.g. 1985123456789" autoComplete="off" />
               </Field>
             </div>
           </Section>

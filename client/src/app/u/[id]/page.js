@@ -57,6 +57,15 @@ export default function PublicUserPage({ params }) {
           </div>
         </div>
 
+        {/* Identity details */}
+        {(u.dob || u.nid || u.address) && (
+          <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 border-b border-border pb-3 text-sm">
+            {u.dob && <Cell label="Date of birth" value={fmtDate(u.dob)} />}
+            {u.nid && <Cell label="National ID" value={u.nid} />}
+            {u.address && <Cell label="Address" value={u.address} full />}
+          </div>
+        )}
+
         <Row label="Allergies" items={u.allergies} danger empty="None recorded" />
         <Row label="Conditions" items={u.conditions} empty="None recorded" />
         <Row label="Medications" items={u.medications} empty="None recorded" />
@@ -77,6 +86,7 @@ export default function PublicUserPage({ params }) {
                 <a href={`tel:${u.guardian.phone.replace(/\s/g, "")}`} className="font-semibold text-primary">{u.guardian.phone}</a>
               )}
             </p>
+            {u.guardian.nid && <p className="mt-0.5 text-xs text-muted">NID: {u.guardian.nid}</p>}
           </div>
         )}
 
@@ -130,6 +140,21 @@ function Row({ label, items = [], empty, danger }) {
       )}
     </div>
   );
+}
+
+function Cell({ label, value, full }) {
+  return (
+    <div className={full ? "col-span-2" : ""}>
+      <p className="text-xs uppercase tracking-wide text-muted">{label}</p>
+      <p className="mt-0.5 font-medium wrap-break-word">{value}</p>
+    </div>
+  );
+}
+
+function fmtDate(dob) {
+  const d = new Date(dob);
+  if (isNaN(d)) return dob;
+  return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
 }
 
 function calcAge(dob) {

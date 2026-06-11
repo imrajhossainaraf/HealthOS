@@ -2,27 +2,44 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth";
 
-const LINKS = [
+// Top-level links always visible on desktop.
+const PRIMARY = [
   { href: "/dashboard", label: "Dashboard" },
-  { href: "/ai-assistant", label: "✨ Agent" },
   { href: "/emergency", label: "Emergency" },
+  { href: "/community", label: "Community" },
   { href: "/profile", label: "Health Card" },
   { href: "/family", label: "Family" },
-  { href: "/community", label: "Community" },
-  { href: "/herbal", label: "Herbal" },
-  { href: "/disease-watch", label: "Disease Watch" },
+];
+
+// Everything else, tucked into the "More" dropdown.
+const MORE = [
+  { href: "/ai-assistant", label: "✨ Agent" },
+  { href: "/herbal", label: "🌿 Herbal" },
+  { href: "/disease-watch", label: "🦠 Disease Watch" },
+  { href: "/fitness", label: "💪 Fitness" },
+  { href: "/mental-wellness", label: "🧠 Mental Wellness" },
+  { href: "/hospitals", label: "🏥 Hospitals" },
+  { href: "/knowledge", label: "📚 Knowledge" },
+  { href: "/emergency-history", label: "📋 Timeline" },
 ];
 
 export default function Navbar() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   const { user, status, logout } = useAuth();
 
   const isActive = (href) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
+  const moreActive = MORE.some((l) => isActive(l.href));
+
+  // Close the dropdown on navigation.
+  useEffect(() => {
+    setMoreOpen(false);
+  }, [pathname]);
 
   // The home page is a self-contained app shell with its own sidebar + topbar.
   if (pathname === "/") return null;
@@ -49,7 +66,7 @@ export default function Navbar() {
 
         {/* Desktop links */}
         <ul className="hidden items-center gap-1 lg:flex">
-          {LINKS.map((l) => (
+          {PRIMARY.map((l) => (
             <li key={l.href}>
               <Link
                 href={l.href}
@@ -63,6 +80,55 @@ export default function Navbar() {
               </Link>
             </li>
           ))}
+
+          {/* More dropdown */}
+          <li className="relative">
+            <button
+              type="button"
+              onClick={() => setMoreOpen((v) => !v)}
+              aria-expanded={moreOpen}
+              aria-haspopup="menu"
+              className={`flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                moreActive || moreOpen
+                  ? "bg-primary/15 text-primary"
+                  : "text-muted hover:bg-surface-2 hover:text-text"
+              }`}
+            >
+              More <span className={`text-xs transition-transform ${moreOpen ? "rotate-180" : ""}`}>▾</span>
+            </button>
+            {moreOpen && (
+              <>
+                {/* click-away backdrop */}
+                <button
+                  type="button"
+                  aria-hidden
+                  tabIndex={-1}
+                  onClick={() => setMoreOpen(false)}
+                  className="fixed inset-0 z-40 cursor-default"
+                />
+                <div
+                  role="menu"
+                  className="glass absolute right-0 z-50 mt-2 w-52 overflow-hidden rounded-xl border border-border p-1.5 shadow-xl"
+                >
+                  {MORE.map((l) => (
+                    <Link
+                      key={l.href}
+                      href={l.href}
+                      role="menuitem"
+                      onClick={() => setMoreOpen(false)}
+                      className={`block rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                        isActive(l.href)
+                          ? "bg-primary/15 text-primary"
+                          : "text-muted hover:bg-surface-2 hover:text-text"
+                      }`}
+                    >
+                      {l.label}
+                    </Link>
+                  ))}
+                </div>
+              </>
+            )}
+          </li>
         </ul>
 
         {/* Desktop auth + CTA */}
@@ -107,7 +173,7 @@ export default function Navbar() {
       {open && (
         <div className="border-t border-border bg-surface lg:hidden">
           <ul className="mx-auto flex max-w-7xl flex-col gap-1 px-4 py-3">
-            {LINKS.map((l) => (
+            {[...PRIMARY, ...MORE].map((l) => (
               <li key={l.href}>
                 <Link
                   href={l.href}

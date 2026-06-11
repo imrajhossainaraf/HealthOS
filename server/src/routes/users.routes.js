@@ -49,20 +49,23 @@ async function publicEmergencyProfile(user) {
   return {
     id: userId,
     name: profile.name || user.name || "",
-    phone: user.phone || "",
+    phone: profile.phone || user.phone || "",
     bloodGroup: profile.bloodGroup || "",
     gender: profile.gender || "",
     dob: profile.dob || "",
+    nid: profile.nid || "",
     allergies: profile.allergies || [],
     conditions: profile.conditions || [],
     medications: profile.medications || [],
     area: profile.area || profile.city || "",
+    address: profile.address || "",
     guardian:
-      profile.guardianName || profile.guardianPhone || profile.guardianEmail
+      profile.guardianName || profile.guardianPhone || profile.guardianEmail || profile.guardianNid
         ? {
             name: profile.guardianName || "",
             phone: profile.guardianPhone || "",
             email: profile.guardianEmail || "",
+            nid: profile.guardianNid || "",
           }
         : null,
     // Strip emails from public contact output; keep name/relation/phone.

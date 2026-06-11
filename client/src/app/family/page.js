@@ -89,6 +89,7 @@ export default function FamilyPage() {
                   <FamilyMemberCard
                     key={m.id}
                     member={m}
+                    selected={selectedId === m.id}
                     onSelect={() => setSelectedId(m.id)}
                     onRemove={() => removeMember(m.id)}
                   />
