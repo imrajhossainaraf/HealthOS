@@ -131,81 +131,54 @@ export default function DashboardPage() {
 
   return (
     <div className="pb-16">
-      {/* ============== HEADER ============== */}
+      {/* ============== HEADER (welcome + compact stats) ============== */}
       <header>
-        <div className="mx-auto max-w-6xl px-4 pt-10 sm:px-6 animate-fade-up">
-          <p className="text-sm text-muted">{today}</p>
-          <h1 className="mt-1 font-display text-3xl font-bold sm:text-4xl">
-            Welcome back, <span className="text-gradient-animated">{firstName}</span> 👋
-          </h1>
-          <p className="mt-1 text-muted">Your unified health overview.</p>
+        <div className="mx-auto flex max-w-6xl flex-wrap items-start justify-between gap-6 px-4 pt-10 sm:px-6 animate-fade-up">
+          <div>
+            <p className="text-sm text-muted">{today}</p>
+            <h1 className="mt-1 font-display text-3xl font-bold sm:text-4xl">
+              Welcome back, <span className="text-gradient-animated">{firstName}</span> 👋
+            </h1>
+            <p className="mt-1 text-muted">Your unified health overview.</p>
+          </div>
 
-          {/* quick actions — light, fast access */}
-          <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-            {QUICK.map((q, i) => (
+          {/* Compact stats — top right, icon + data */}
+          <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+            <StatItem Icon={Scale} tint="text-primary" chip="bg-primary/10" value={bmi ? bmi.value : "—"} label={bmi ? `BMI · ${bmi.category}` : "BMI"} />
+            <StatItem Icon={Droplet} tint="text-emergency" chip="bg-emergency/10" value={profile.bloodGroup || "—"} label="Blood group" />
+            <StatItem Icon={GlassWater} tint="text-info" chip="bg-info/10" value={`${todayWater}/8`} label="Glasses today" />
+            <StatItem Icon={CircleCheck} tint="text-success" chip="bg-success/10" value={`${profileComplete}%`} label="Profile complete" />
+          </div>
+        </div>
+      </header>
+
+      {/* ============== CHART + QUICK ACCESS ============== */}
+      <div className="mx-auto mt-8 grid max-w-6xl gap-6 px-4 sm:px-6 lg:grid-cols-[1.6fr_1fr]">
+        <AlertsGraph history={history} />
+
+        <section className="glass rounded-2xl p-6">
+          <h2 className="mb-4 font-display text-lg font-semibold">Quick access</h2>
+          <div className="grid grid-cols-2 gap-3">
+            {QUICK.map((q) => (
               <Link
                 key={q.href}
                 href={q.href}
-                style={{ animationDelay: `${0.05 * i + 0.1}s` }}
-                className="glass card-rise animate-rise-in flex items-center gap-2.5 rounded-2xl px-3 py-3"
+                className="glass-hover flex items-center gap-2.5 rounded-xl border border-border bg-surface px-3 py-3"
               >
-                <span
-                  className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl ${q.chip}`}
-                >
+                <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl ${q.chip}`}>
                   <q.Icon className="h-5 w-5" strokeWidth={2} />
                 </span>
                 <span className="truncate text-sm font-medium">{q.label}</span>
               </Link>
             ))}
           </div>
-        </div>
-      </header>
-
-      {/* ============== STAT CARDS ============== */}
-      <div className="mx-auto max-w-6xl px-4 sm:px-6">
-        <div className="mt-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
-          <StatCard
-            delay={0.15}
-            Icon={Scale}
-            tint="text-primary"
-            chip="bg-primary/10"
-            value={bmi ? bmi.value : "—"}
-            label={bmi ? `BMI · ${bmi.category}` : "BMI — add height/weight"}
-          />
-          <StatCard
-            delay={0.22}
-            Icon={Droplet}
-            tint="text-emergency"
-            chip="bg-emergency/10"
-            value={profile.bloodGroup || "—"}
-            label="Blood group"
-          />
-          <StatCard
-            delay={0.29}
-            Icon={GlassWater}
-            tint="text-info"
-            chip="bg-info/10"
-            value={`${todayWater}/8`}
-            label="Glasses today"
-          />
-          <StatCard
-            delay={0.36}
-            Icon={CircleCheck}
-            tint="text-success"
-            chip="bg-success/10"
-            value={`${profileComplete}%`}
-            label="Profile complete"
-          />
-        </div>
+        </section>
       </div>
 
       {/* ============== MAIN GRID ============== */}
       <div className="mx-auto mt-10 grid max-w-6xl gap-6 px-4 sm:px-6 lg:grid-cols-[1.6fr_1fr]">
         {/* LEFT */}
         <div className="space-y-6">
-          {/* Emergency alerts graph */}
-          <AlertsGraph history={history} />
-
           {/* Guardian overview */}
           <section className="glass rounded-2xl p-6">
             <div className="mb-4 flex items-center justify-between">
@@ -510,17 +483,16 @@ function smoothPath(pts) {
   return d.join(" ");
 }
 
-function StatCard({ Icon, value, label, tint, chip = "bg-surface-2", delay = 0 }) {
+function StatItem({ Icon, value, label, tint, chip = "bg-surface-2" }) {
   return (
-    <div
-      style={{ animationDelay: `${delay}s` }}
-      className="glass card-rise animate-rise-in rounded-2xl p-5"
-    >
-      <span className={`grid h-10 w-10 place-items-center rounded-xl ${chip} ${tint}`}>
+    <div className="flex items-center gap-2.5">
+      <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${chip} ${tint}`}>
         {Icon && <Icon className="h-5 w-5" strokeWidth={2} />}
       </span>
-      <p className={`mt-3 font-display text-3xl font-bold ${tint}`}>{value}</p>
-      <p className="mt-1 text-xs text-muted">{label}</p>
+      <div className="min-w-0">
+        <p className={`font-display text-xl font-bold leading-none ${tint}`}>{value}</p>
+        <p className="mt-1 truncate text-xs text-muted">{label}</p>
+      </div>
     </div>
   );
 }
