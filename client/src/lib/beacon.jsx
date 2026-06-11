@@ -44,6 +44,8 @@ export function BeaconProvider({ children }) {
   const [connected, setConnected] = useState(false);
   const [incomingAlert, setIncomingAlert] = useState(null);
   const [recentAlerts, setRecentAlerts] = useState([]);
+  const [onlineVolunteers, setOnlineVolunteers] = useState([]);
+  const selfIdRef = useRef(null);
 
   const [optedIn] = useLocalState(KEYS.community + ":volunteerOptIn", false);
 
@@ -101,8 +103,19 @@ export function BeaconProvider({ children }) {
       timeout: 5000,
     });
     socketRef.current = socket;
-    socket.on("connect", () => setConnected(true));
-    socket.on("disconnect", () => setConnected(false));
+    socket.on("connect", () => {
+      selfIdRef.current = socket.id;
+      setConnected(true);
+    });
+    socket.on("disconnect", () => {
+      setConnected(false);
+      setOnlineVolunteers([]);
+    });
+    // Real-time roster of opted-in responders (id, name, lat, lng) — drives the
+    // "Live Location & Responders" map with actual nearby users, not a sim.
+    socket.on("volunteers:update", (list) => {
+      setOnlineVolunteers((Array.isArray(list) ? list : []).filter((v) => v.id !== selfIdRef.current));
+    });
     socket.on("sos:alert", (alert) => {
       const where = describe(alert);
       setIncomingAlert({ ...alert, where, receivedAt: Date.now() });
@@ -236,6 +249,7 @@ export function BeaconProvider({ children }) {
     incomingAlert,
     clearAlert,
     recentAlerts,
+    onlineVolunteers,
   };
   return (
     <BeaconContext.Provider value={value}>{children}</BeaconContext.Provider>

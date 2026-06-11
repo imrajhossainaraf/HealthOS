@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { KEYS, useLocalState, logEmergencyEvent } from "@/lib/storage";
-import { DEFAULT_CENTER, jitter, distanceKm } from "@/lib/geo";
+import { DEFAULT_CENTER, distanceKm } from "@/lib/geo";
 import { useLocation } from "@/lib/location";
 import { useAuth } from "@/lib/auth";
 import { fetchNearbyHospitals, directionsUrl } from "@/lib/hospitals";
@@ -37,11 +37,6 @@ const FIRST_AID = [
 // from the user's location (Google Places → OSM → curated fallback).
 const AMBULANCE = { name: "National Ambulance (999)", phone: "999", distance: "Dispatch" };
 
-const VOLUNTEER_NAMES = [
-  "Rahim (First Aid)", "Sadia (Nurse)", "Imran (Responder)",
-  "Farah (Doctor)", "Hasan (Volunteer)", "Lubna (Care)",
-];
-
 export default function EmergencyPage() {
   const [profile] = useLocalState(KEYS.profile, {});
   const [contacts] = useLocalState(KEYS.emergencyContacts, []);
@@ -59,17 +54,22 @@ export default function EmergencyPage() {
 
   // Realtime: incoming alerts (app-wide beacon) + live responder reach.
   const [liveReach, setLiveReach] = useState(null);
-  const { connected, activate, cancel, respond, incomingAlert, clearAlert, recentAlerts } = useBeaconContext();
+  const { connected, activate, cancel, respond, incomingAlert, clearAlert, recentAlerts, onlineVolunteers } = useBeaconContext();
   const { push } = useToast();
 
-  // Simulated nearby volunteers scattered around the user/center, with distances.
+  // Real opted-in responders currently online, with distance from the user.
   const volunteers = useMemo(() => {
     const origin = coords ? [coords.lat, coords.lng] : DEFAULT_CENTER;
-    return VOLUNTEER_NAMES.map((name, i) => {
-      const [lat, lng] = jitter(origin, (i + 1) / (VOLUNTEER_NAMES.length + 1), 2.5);
-      return { name, lat, lng, distanceKm: distanceKm(origin, [lat, lng]) };
-    }).sort((a, b) => a.distanceKm - b.distanceKm);
-  }, [coords]);
+    return onlineVolunteers
+      .filter((v) => typeof v.lat === "number" && typeof v.lng === "number")
+      .map((v) => ({
+        name: v.name || "Volunteer",
+        lat: v.lat,
+        lng: v.lng,
+        distanceKm: distanceKm(origin, [v.lat, v.lng]),
+      }))
+      .sort((a, b) => a.distanceKm - b.distanceKm);
+  }, [coords, onlineVolunteers]);
 
   const inRangeVolunteers = volunteers.filter((v) => v.distanceKm * 1000 <= VOLUNTEER_RADIUS_M);
 
@@ -317,13 +317,17 @@ export default function EmergencyPage() {
           </div>
 
           <div className="mt-3 flex flex-wrap items-center gap-3 text-sm">
-            <span className="flex items-center gap-1.5"><Dot c="#0d9488" /> You / available volunteers</span>
+            <span className="flex items-center gap-1.5"><Dot c="#0d9488" /> You</span>
+            <span className="flex items-center gap-1.5"><Dot c="#0d9488" /> Online volunteers ({volunteers.length})</span>
             {active && <span className="flex items-center gap-1.5"><Dot c="#e11d48" /> In beacon range ({inRangeVolunteers.length})</span>}
             <span className={`flex items-center gap-1.5 ${connected ? "text-success" : "text-muted"}`}>
-              <Dot c={connected ? "#059669" : "#64748b"} /> {connected ? "Live network connected" : "Offline (simulation only)"}
+              <Dot c={connected ? "#059669" : "#64748b"} /> {connected ? "Live network connected" : "Offline — can't show live volunteers"}
             </span>
             {geoError && <span className="text-warning">⚠️ {geoError} — showing default area</span>}
             {!coords && !geoError && <span className="text-muted">Using default area until you share location.</span>}
+            {connected && volunteers.length === 0 && (
+              <span className="text-muted">No volunteers online nearby right now.</span>
+            )}
           </div>
         </section>
       </div>

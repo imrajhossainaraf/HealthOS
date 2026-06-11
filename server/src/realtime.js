@@ -218,6 +218,20 @@ export function initRealtime(httpServer) {
   });
   ioRef = io;
 
+  // Tell every client who's currently online & opted-in as a volunteer, so the
+  // "Live Location & Responders" map can plot real nearby users (not a sim).
+  function volunteerList() {
+    return [...volunteers.entries()].map(([id, v]) => ({
+      id,
+      name: v.user,
+      lat: v.lat,
+      lng: v.lng,
+    }));
+  }
+  function broadcastVolunteers() {
+    io.emit("volunteers:update", volunteerList());
+  }
+
   io.on("connection", async (socket) => {
     const user = await authenticateSocket(socket.handshake.auth?.token);
 
@@ -226,15 +240,21 @@ export function initRealtime(httpServer) {
     // they're on or how many tabs they have open.
     if (user?.id) socket.join(`user:${user.id}`);
 
+    // Sync the newly connected client with who's already online.
+    socket.emit("volunteers:update", volunteerList());
+
     // Volunteer toggles availability and shares coarse location.
     socket.on("volunteer:online", ({ lat, lng } = {}) => {
       if (typeof lat === "number" && typeof lng === "number") {
         volunteers.set(socket.id, { user: user?.name || "Volunteer", email: user?.email || "", lat, lng });
         // Persist as the user's last-known fix for future nearby lookups.
         rememberUserLocation(user?.id, lat, lng);
+        broadcastVolunteers();
       }
     });
-    socket.on("volunteer:offline", () => volunteers.delete(socket.id));
+    socket.on("volunteer:offline", () => {
+      if (volunteers.delete(socket.id)) broadcastVolunteers();
+    });
 
     // An SOS fires: persist it, then broadcast to EVERY connected client so the
     // whole network sees the alert (not just nearby volunteers). Each client
@@ -355,7 +375,9 @@ export function initRealtime(httpServer) {
       }
     });
 
-    socket.on("disconnect", () => volunteers.delete(socket.id));
+    socket.on("disconnect", () => {
+      if (volunteers.delete(socket.id)) broadcastVolunteers();
+    });
   });
 
   return io;
